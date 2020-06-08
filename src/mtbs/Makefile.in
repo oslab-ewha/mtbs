@@ -86,8 +86,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = sdtbs$(EXEEXT)
-subdir = src/sdtbs
+bin_PROGRAMS = mtbs$(EXEEXT)
+subdir = src/mtbs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/cuda.m4 \
 	$(top_srcdir)/configure.ac
@@ -100,16 +100,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sdtbs_OBJECTS = sdtbs.$(OBJEXT) tbs_sd.$(OBJEXT) \
-	tbs_native.$(OBJEXT) benchmgr.$(OBJEXT) benchrun.$(OBJEXT) \
-	skrun.$(OBJEXT) fedkern.$(OBJEXT) report.$(OBJEXT) \
-	misc.$(OBJEXT) benchapi.$(OBJEXT) sched.$(OBJEXT) \
-	sched_rr.$(OBJEXT) sched_rrf.$(OBJEXT) sched_fca.$(OBJEXT) \
-	sched_rrm.$(OBJEXT) sched_dyn.$(OBJEXT) sched_dyn_rr.$(OBJEXT) \
+am_mtbs_OBJECTS = mtbs.$(OBJEXT) tbs_sd.$(OBJEXT) tbs_native.$(OBJEXT) \
+	benchmgr.$(OBJEXT) benchrun.$(OBJEXT) skrun.$(OBJEXT) \
+	fedkern.$(OBJEXT) report.$(OBJEXT) misc.$(OBJEXT) \
+	benchapi.$(OBJEXT) sched.$(OBJEXT) sched_rr.$(OBJEXT) \
+	sched_rrf.$(OBJEXT) sched_fca.$(OBJEXT) sched_rrm.$(OBJEXT) \
+	sched_dyn.$(OBJEXT) sched_dyn_rr.$(OBJEXT) \
 	sched_dyn_rrf.$(OBJEXT) sched_dyn_fca.$(OBJEXT) \
 	sched_dyn_rrm.$(OBJEXT)
-sdtbs_OBJECTS = $(am_sdtbs_OBJECTS)
-sdtbs_DEPENDENCIES = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
+mtbs_OBJECTS = $(am_mtbs_OBJECTS)
+mtbs_DEPENDENCIES = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
 	../../benchmarks/inhouse/mklc/libmklc.a \
 	../../benchmarks/inhouse/gma/libgma.a \
 	../../benchmarks/inhouse/lma/liblma.a \
@@ -141,8 +141,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(sdtbs_SOURCES)
-DIST_SOURCES = $(sdtbs_SOURCES)
+SOURCES = $(mtbs_SOURCES)
+DIST_SOURCES = $(mtbs_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -272,12 +272,12 @@ top_srcdir = @top_srcdir@
 CLEANFILES = *~
 DISTCLEANFILES = *~
 LINK = @NVCC_PATH@ @NVCC_ARCHITECTURE@ -o $@
-sdtbs_SOURCES = sdtbs.c tbs_sd.cu tbs_native.cu benchmgr.cu benchrun.cu skrun.cu \
-	fedkern.cu report.cu misc.cu sdtbs.h sdtbs_cu.h benchapi.cu \
+mtbs_SOURCES = mtbs.c tbs_sd.cu tbs_native.cu benchmgr.cu benchrun.cu skrun.cu \
+	fedkern.cu report.cu misc.cu mtbs.h mtbs_cu.h benchapi.cu \
 	sched.cu sched_rr.cu sched_rrf.cu sched_fca.cu sched_rrm.cu \
 	sched_dyn.cu sched_dyn_rr.cu sched_dyn_rrf.cu sched_dyn_fca.cu sched_dyn_rrm.cu
 
-sdtbs_LDADD = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
+mtbs_LDADD = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
 		../../benchmarks/inhouse/mklc/libmklc.a \
 		../../benchmarks/inhouse/gma/libgma.a \
 		../../benchmarks/inhouse/lma/liblma.a \
@@ -297,9 +297,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/sdtbs/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/mtbs/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/sdtbs/Makefile
+	  $(AUTOMAKE) --foreign src/mtbs/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -361,9 +361,9 @@ uninstall-binPROGRAMS:
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 
-sdtbs$(EXEEXT): $(sdtbs_OBJECTS) $(sdtbs_DEPENDENCIES) $(EXTRA_sdtbs_DEPENDENCIES) 
-	@rm -f sdtbs$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(sdtbs_OBJECTS) $(sdtbs_LDADD) $(LIBS)
+mtbs$(EXEEXT): $(mtbs_OBJECTS) $(mtbs_DEPENDENCIES) $(EXTRA_mtbs_DEPENDENCIES) 
+	@rm -f mtbs$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(mtbs_OBJECTS) $(mtbs_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -371,7 +371,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sdtbs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mtbs.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

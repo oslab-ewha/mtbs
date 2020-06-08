@@ -1,7 +1,7 @@
 #ifndef _SDTBS_CU_H_
 #define _SDTBS_CU_H_
 
-#include "sdtbs.h"
+#include "mtbs.h"
 
 #include "../../benchmarks/benchapi.h"
 

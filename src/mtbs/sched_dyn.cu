@@ -1,6 +1,6 @@
 #include "../../config.h"
 
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 #include "sched_cu.h"
 
 #define EPOCH_MAX		64

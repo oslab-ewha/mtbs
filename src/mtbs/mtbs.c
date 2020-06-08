@@ -1,10 +1,10 @@
-#include "sdtbs.h"
+#include "mtbs.h"
 
 static void
 usage(void)
 {
 	printf(
-"sdtbs <options> <benchmark spec>...\n"
+"mtbs <options> <benchmark spec>...\n"
 "<options>:\n"
 "  -d <device no>: select GPU device\n"
 "  -p <policy:optional arg>: scheduling policy\n"

@@ -3,7 +3,7 @@
 *~
 .deps/
 /autom4te.cache/
-/src/sdtbs/sdtbs
+/src/mtbs/mtbs
 /config.h
 /config.log
 /config.status

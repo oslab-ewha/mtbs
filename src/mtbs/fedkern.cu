@@ -1,4 +1,4 @@
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 
 extern unsigned	n_max_mtbs_per_sm;
 

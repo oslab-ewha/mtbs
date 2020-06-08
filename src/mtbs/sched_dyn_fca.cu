@@ -1,4 +1,4 @@
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 
 __device__ unsigned
 cu_get_tb_sm_fca(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start)

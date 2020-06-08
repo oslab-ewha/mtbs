@@ -1,4 +1,4 @@
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 
 extern __device__ skrun_t *get_skr_dyn(void);
 extern __device__ unsigned short get_offset_TB_dyn(void);

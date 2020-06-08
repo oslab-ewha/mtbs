@@ -1,4 +1,4 @@
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 
 extern void start_benchruns(void);
 extern void wait_benchruns(void);

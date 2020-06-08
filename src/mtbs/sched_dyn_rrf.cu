@@ -1,4 +1,4 @@
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 
 static __device__ volatile unsigned	id_sm = 1;
 

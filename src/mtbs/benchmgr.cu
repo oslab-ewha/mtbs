@@ -1,4 +1,4 @@
-#include "sdtbs_cu.h"
+#include "mtbs_cu.h"
 
 #define BENCH_PROTO(name)	int name(cudaStream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[])
 #define BENCHMARK(base)		BENCH_PROTO(bench_##base);
