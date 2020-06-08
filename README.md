@@ -1,6 +1,6 @@
-SDTBS(Software Defined TBS)
-===========================
-- This project aims to support simulation on real GPU device.
+mtbs(TBS for many task)
+=======================
+- This project aims to support many task simulation on real GPU device.
 
 ## Build
 
@@ -10,6 +10,6 @@ SDTBS(Software Defined TBS)
 
 ## Running
 
-- # cd src/sdtbs
-- # ./sdtbs &lt;options&gt; &lt;benchmark spec&gt;...
-- you can check detailed options with ./sdtbs -h 
+- # cd src/mtbs
+- # ./mtbs &lt;options&gt; &lt;benchmark spec&gt;...
+- you can check detailed options with ./mtbs -h 
