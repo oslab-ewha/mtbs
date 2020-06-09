@@ -30,7 +30,7 @@ typedef struct {
 
 typedef enum {
 	TBS_TYPE_HW = 1,
-	TBS_TYPE_DYNAMIC
+	TBS_TYPE_SD
 } tbs_type_t;
 
 typedef struct {
@@ -62,8 +62,6 @@ typedef struct {
 typedef struct {
 	const char	*name;
 	tbs_type_t	type;
-	void *(*parse_arg)(const char *argstr);
-	unsigned (*get_tb_sm)(dim3 dimBlock, unsigned n_tbs_x, unsigned n_tbs_y);
 } sched_t;
 
 __device__ extern tbs_type_t	d_tbs_type;
@@ -72,6 +70,9 @@ __device__ extern unsigned	*d_mtbs_done_cnts;
 
 extern sched_t		*sched;
 extern benchrun_t	benchruns[MAX_BENCHES];
+
+extern void start_benchruns(void);
+extern void wait_benchruns(void);
 
 __device__ uint get_smid(void);
 __device__ void sleep_in_kernel(void);

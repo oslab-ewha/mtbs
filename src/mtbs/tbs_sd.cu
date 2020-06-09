@@ -64,10 +64,6 @@ stop_macro_TB(fedkern_info_t *fkinfo)
 	cudaStreamSynchronize(strm);
 }
 
-////TODO
-extern void start_benchruns(void);
-extern void wait_benchruns(void);
-
 BOOL
 run_sd_tbs(unsigned *pticks)
 {

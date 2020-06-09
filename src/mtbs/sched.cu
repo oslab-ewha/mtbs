@@ -1,15 +1,17 @@
 #include "mtbs_cu.h"
 
-extern sched_t	sched_hw;
-extern sched_t	sched_rr;
-extern sched_t	sched_rrf;
-extern sched_t	sched_fca;
-extern sched_t	sched_rrm;
-extern sched_t	sched_rrp;
+static sched_t	sched_hw = {
+	"hw",
+	TBS_TYPE_HW,
+};
+
+static sched_t	sched_sd = {
+	"sd",
+	TBS_TYPE_SD,
+};
 
 static sched_t	*all_sched[] = {
-	&sched_hw,
-	&sched_rr, &sched_rrf, &sched_fca, &sched_rrm, NULL
+	&sched_hw, &sched_sd, NULL
 };
 
 sched_t	*sched = &sched_hw;

@@ -7,14 +7,9 @@ usage(void)
 "mtbs <options> <benchmark spec>...\n"
 "<options>:\n"
 "  -d <device no>: select GPU device\n"
-"  -p <policy:optional arg>: scheduling policy\n"
-"     optional policy argument can be provided after a colon\n"
-"     supported policies: hw(hardware scheduling, default)\n"
-"                         rr(round-robin)\n"
-"                         rrf(round-robin fully)\n"
-"                         fca(first come allocation)\n"
-"                         rrm(round-robin max):max mtbs per sm\n"
-"     non-hw policy suffix: H(host), P(parallel)\n"
+"  -s <sched type>: scheduling type\n"
+"     supported scheduling: hw(hardware scheduling, default)\n"
+"                           sd(software-defined scheduling)\n"
 "  -M <MTB count per sm>\n"
 "  -T <thread count per MTB>\n"
 "  -h: help\n"
@@ -100,12 +95,12 @@ parse_options(int argc, char *argv[])
 {
 	int	c;
 
-	while ((c = getopt(argc, argv, "d:p:M:T:h")) != -1) {
+	while ((c = getopt(argc, argv, "d:s:M:T:h")) != -1) {
 		switch (c) {
 		case 'd':
 			select_device(optarg);
 			break;
-		case 'p':
+		case 's':
 			setup_sched(optarg);
 			break;
 		case 'M':
