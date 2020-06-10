@@ -3,6 +3,10 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <cuda.h>
+
+CUcontext	context;
+
 __device__ tbs_type_t	d_tbs_type;
 __device__ skrun_t	*d_skruns;
 __device__ unsigned	*d_mtbs_done_cnts;
@@ -58,9 +62,10 @@ run_sub_kernel(skrid_t skrid)
 	int	res;
 
 	skr = &d_skruns[skrid - 1];
-	res = run_sub_kernel_func(skr->skid, skr->args);
-	if (get_threadIdxX() == 0)
+	res = run_sub_kernel_func(skr->skid, (void **)skr->args);
+	if (get_threadIdxX() == 0) {
 		skr->res = res;
+	}
 }
 
 __global__ void
@@ -169,6 +174,8 @@ skruns_checkfunc(void *arg)
 {
 	cudaStream_t	strm;
 
+	cuCtxSetCurrent(context);
+
 	cudaStreamCreate(&strm);
 
 	while (!checker_done) {
@@ -205,6 +212,8 @@ void
 init_skrun(void)
 {
 	cudaError_t	err;
+
+	cuCtxGetCurrent(&context);
 
 	cudaStreamCreate(&strm_submit);
 

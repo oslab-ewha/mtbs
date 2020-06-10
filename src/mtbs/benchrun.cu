@@ -4,8 +4,7 @@
 
 #include <pthread.h>
 
-static CUcontext	context;
-
+extern CUcontext	context;
 pthread_t	threads[MAX_BENCHES];
 
 static void *
@@ -43,7 +42,6 @@ wait_benchruns(void)
 {
 	int	i;
 
-	cuCtxGetCurrent(&context);
 	for (i = 0; i < n_benches; i++) {
 		void	*ret;
 		pthread_join(threads[i], &ret);
