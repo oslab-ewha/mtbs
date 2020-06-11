@@ -91,28 +91,33 @@ parse_args(const char *c_args, benchrun_t *brun)
 }
 
 extern "C" BOOL
-add_bench(const char *code, const char *args)
+add_bench(unsigned runcount, const char *code, const char *args)
 {
-	benchrun_t	*brun = benchruns + n_benches;
 	benchinfo_t	*info;
-	int	n_tbs;
+	unsigned	i;
 
 	info = find_benchinfo(code);
 	if (info == NULL)
 		return FALSE;
-	brun->info = info;
-	if (!parse_args(args, brun))
-		return FALSE;
-	if (info->cookarg_func != NULL) {
-		if (info->cookarg_func(brun->dimGrid, brun->dimBlock, brun->args) < 0) {
-			error("failed to cook arguments");
+	for (i = 0; i < runcount; i++) {
+		benchrun_t	*brun = benchruns + n_benches;
+		int	n_tbs;
+
+		brun->info = info;
+		if (!parse_args(args, brun))
 			return FALSE;
+		if (info->cookarg_func != NULL) {
+			if (info->cookarg_func(brun->dimGrid, brun->dimBlock, brun->args) < 0) {
+				error("failed to cook arguments");
+				return FALSE;
+			}
 		}
+		n_tbs = brun->dimGrid.x * brun->dimGrid.y;
+		n_tbs_submitted += n_tbs;
+		n_mtbs_submitted += (n_tbs * (brun->dimBlock.x * brun->dimBlock.y / N_THREADS_PER_mTB));
+		
+		n_benches++;
 	}
-	n_benches++;
-	n_tbs = brun->dimGrid.x * brun->dimGrid.y;
-	n_tbs_submitted += n_tbs;
-	n_mtbs_submitted += (n_tbs * (brun->dimBlock.x * brun->dimBlock.y / N_THREADS_PER_mTB));
 
 	return TRUE;
 }

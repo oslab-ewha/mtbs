@@ -6,7 +6,7 @@
 #include "../../benchmarks/benchapi.h"
 
 #define MAX_QUEUED_KERNELS	2000
-#define MAX_BENCHES	20
+#define MAX_BENCHES	1024
 #define MAX_ARGS	5
 #define N_THREADS_PER_mTB	32
 

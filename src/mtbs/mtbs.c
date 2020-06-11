@@ -4,7 +4,7 @@ static void
 usage(void)
 {
 	printf(
-"mtbs <options> <benchmark spec>...\n"
+"mtbs <options> [<run prefix>]<benchmark spec>...\n"
 "<options>:\n"
 "  -d <device no>: select GPU device\n"
 "  -s <sched type>: scheduling type\n"
@@ -13,6 +13,8 @@ usage(void)
 "  -M <MTB count per sm>\n"
 "  -T <thread count per MTB>\n"
 "  -h: help\n"
+"<run prefix>: NN*\n"
+"  following benchmark is submitted NN times\n"
 "<benchmark spec>: <code>:<arg string>\n"
 " <code>:\n"
 "  lc: repetitive loop calculation(in-house)\n"
@@ -47,17 +49,27 @@ parse_benchargs(int argc, char *argv[])
 		return -1;
 	}
 	for (i = 0; i < argc; i++) {
-		char	*colon, *args = NULL;
+		char	*bencharg, *colon, *args = NULL;
+		unsigned	runcount = 1;
 
-		colon = strchr(argv[i], ':');
+		if (sscanf(argv[i], "%u*", &runcount) == 1) {
+			char	*star;
+			star = strchr(argv[i], '*');
+			bencharg = strdup(star + 1);
+		}
+		else
+			bencharg = strdup(argv[i]);
+		colon = strchr(bencharg, ':');
 		if (colon != NULL) {
 			*colon = '\0';
 			args = strdup(colon + 1);
 		}
-		if (!add_bench(argv[i], args)) {
+		if (!add_bench(runcount, bencharg, args)) {
+			free(bencharg);
 			error("invalid benchmark code or arguments: %s", argv[i]);
 			return -1;
 		}
+		free(bencharg);
 	}
 	return 0;
 }

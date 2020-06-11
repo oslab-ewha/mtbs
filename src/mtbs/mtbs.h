@@ -27,7 +27,7 @@ extern unsigned	sched_id;
 extern unsigned	devno;
 
 void error(const char *fmt, ...);
-BOOL add_bench(const char *code, const char *args);
+BOOL add_bench(unsigned runcount, const char *code, const char *args);
 
 void report(unsigned elapsed);
 
