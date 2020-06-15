@@ -15,14 +15,13 @@ static pthread_t	threads[N_WORKERS];
 static unsigned	n_benches_started;
 
 static void
-run_bench(benchrun_t *brun, cudaStream_t strm)
+run_bench(benchrun_t *brun)
 {
 	bench_func_t	bench;
 	int		res;
 
 	bench = brun->info->bench_func;
-	res = bench(strm, brun->dimGrid, brun->dimBlock, brun->args);
-	cudaStreamSynchronize(strm);
+	res = bench(brun->dimGrid, brun->dimBlock, brun->args);
 
 	brun->res = res;
 }
@@ -45,20 +44,15 @@ get_benchrun(void)
 static void *
 worker_func(void *ctx)
 {
-	cudaStream_t	strm;
-
 	cuCtxSetCurrent(context);
-	cudaStreamCreate(&strm);
 
 	while (TRUE) {
 		benchrun_t	*brun = get_benchrun();
 
 		if (brun == NULL)
 			break;
-		run_bench(brun, strm);
+		run_bench(brun);
 	}
-
-	cudaStreamDestroy(strm);
 
 	return NULL;
 }

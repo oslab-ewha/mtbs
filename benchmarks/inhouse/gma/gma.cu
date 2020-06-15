@@ -49,13 +49,16 @@ cookarg_gma(dim3 dimGrid, dim3 dimBlock, void *args[])
 }
 
 int
-bench_gma(cudaStream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[])
+bench_gma(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
+	vstream_t	strm;
 	skrid_t	skrid;
 	int	res;
 
+	strm = create_vstream();
 	skrid = launch_kernel(GMA, strm, dimGrid, dimBlock, args);
 	wait_kernel(skrid, strm, &res);
+	destroy_vstream(strm);
 
 	return res;
 }

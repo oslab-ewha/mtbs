@@ -28,6 +28,7 @@ extern void assign_fedkern_brun(fedkern_info_t *fkinfo,  benchrun_t *brun, unsig
 
 extern void init_skrun(void);
 extern void fini_skrun(void);
+extern void init_streams(void);
 
 extern "C" void
 setup_sched(const char *strpol)
@@ -71,6 +72,7 @@ run_tbs(unsigned *pticks)
 	BOOL	res;
 
 	init_skrun();
+	init_streams();
 
 	if (sched->type == TBS_TYPE_HW)
 		res = run_native_tbs(pticks);

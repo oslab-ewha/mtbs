@@ -18,7 +18,7 @@ extern int	n_tbs_submitted;
 extern int	n_mtbs_submitted;
 
 typedef int (*cookarg_func_t)(dim3 dimGrid, dim3 dimBlock, void *args[]);
-typedef int (*bench_func_t)(cudaStream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[]);
+typedef int (*bench_func_t)(dim3 dimGrid, dim3 dimBlock, void *args[]);
 
 typedef struct {
 	skid_t		skid;

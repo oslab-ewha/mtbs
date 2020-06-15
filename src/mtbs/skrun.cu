@@ -5,6 +5,8 @@
 
 #include <cuda.h>
 
+#include "stream.h"
+
 CUcontext	context;
 
 __device__ tbs_type_t	d_tbs_type;
@@ -104,14 +106,19 @@ submit_skrun(skid_t skid, dim3 dimGrid, dim3 dimBlock, void *args[])
 }
 
 skrid_t
-launch_kernel(skid_t skid, cudaStream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[])
+launch_kernel(skid_t skid, vstream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[])
 {
 	skrid_t	skrid;
+	cudaStream_t	cstrm = NULL;
 
 	skrid = submit_skrun(skid, dimGrid, dimBlock, args);
 
-	if (sched->type == TBS_TYPE_HW)
-		sub_kernel_func<<<dimGrid, dimBlock, 0, strm>>>(skrid);
+	if (sched->type == TBS_TYPE_HW) {
+		if (strm != NULL) {
+			cstrm = ((vstrm_t)strm)->cudaStrm;
+		}
+		sub_kernel_func<<<dimGrid, dimBlock, 0, cstrm>>>(skrid);
+	}
 	return skrid;
 }
 
@@ -127,19 +134,25 @@ wait_skrun(skrid_t skrid)
 }
 
 void
-wait_kernel(skrid_t skrid, cudaStream_t strm, int *pres)
+wait_kernel(skrid_t skrid, vstream_t strm, int *pres)
 {
 	skrun_t	*skr;
 	int	res;
 
-	if (sched->type == TBS_TYPE_HW)
-		cudaStreamSynchronize(strm);
+	if (sched->type == TBS_TYPE_HW) {
+		if (strm != NULL) {
+			cudaStreamSynchronize(((vstrm_t)strm)->cudaStrm);
+		}
+		else {
+			cudaDeviceSynchronize();
+		}
+	}
 	else
 		wait_skrun(skrid);
 
 	skr = g_skruns + (skrid - 1);
-	cudaMemcpyAsync(&res, &skr->res, sizeof(int), cudaMemcpyDeviceToHost, strm);
-	cudaStreamSynchronize(strm);
+	cudaMemcpyAsync(&res, &skr->res, sizeof(int), cudaMemcpyDeviceToHost, strm_submit);
+	cudaStreamSynchronize(strm_submit);
 	*pres = res;
 }
 

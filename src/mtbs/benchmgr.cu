@@ -1,6 +1,6 @@
 #include "mtbs_cu.h"
 
-#define BENCH_PROTO(name)	int name(cudaStream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[])
+#define BENCH_PROTO(name)	int name(dim3 dimGrid, dim3 dimBlock, void *args[])
 #define BENCHMARK(base)		BENCH_PROTO(bench_##base);
 #define BENCH_COOKARG(name)	int cookarg_##name(dim3 dimGrid, dim3 dimBlock, void *args[]);
 

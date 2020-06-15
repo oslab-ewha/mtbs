@@ -28,20 +28,30 @@ mklc(void *args[])
 }
 
 int
-bench_mklc(cudaStream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[])
+bench_mklc(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
 	skrid_t	*skrids;
+	vstream_t	*strms;
 	int	count;
 	int	res;
 	int	i;
 
 	count = (int)(long long)args[0];
 	skrids = (skrid_t *)malloc(sizeof(skrid_t) * count);
-	for (i = 0; i < count; i++)
-		skrids[i] = launch_kernel(MKLC, strm, dimGrid, dimBlock, args + 1);
+	strms = (vstream_t *)malloc(sizeof(vstream_t) * count);
+	for (i = 0; i < count; i++) {
+		strms[i] = create_vstream();
+		skrids[i] = launch_kernel(MKLC, strms[i], dimGrid, dimBlock, args + 1);
+	}
 	
 	for (i = 0; i < count; i++)
-		wait_kernel(skrids[i], strm, &res);
+		wait_kernel(skrids[i], strms[i], &res);
+
+	for (i = 0; i < count; i++)
+		destroy_vstream(strms[i]);
+
+	free(skrids);
+	free(strms);
 
 	return res;
 }
