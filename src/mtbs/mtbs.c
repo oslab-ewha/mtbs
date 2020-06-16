@@ -10,6 +10,8 @@ usage(void)
 "  -s <sched type>: scheduling type\n"
 "     supported scheduling: hw(hardware scheduling, default)\n"
 "                           sd(software-defined scheduling)\n"
+"  -w <# of workers>: # of sumission worker, default: 30\n"
+"  -S <# of pre-allocated streams>: # of streams, default: 120\n"
 "  -M <MTB count per sm>\n"
 "  -T <thread count per MTB>\n"
 "  -h: help\n"
@@ -38,6 +40,8 @@ usage(void)
 unsigned	devno;
 unsigned	arg_n_MTBs_per_sm;
 unsigned	arg_n_threads_per_MTB;
+unsigned	n_submission_workers = 30;
+unsigned	n_streams = 120;
 
 static int
 parse_benchargs(int argc, char *argv[])
@@ -107,13 +111,19 @@ parse_options(int argc, char *argv[])
 {
 	int	c;
 
-	while ((c = getopt(argc, argv, "d:s:M:T:h")) != -1) {
+	while ((c = getopt(argc, argv, "d:s:w:S:M:T:h")) != -1) {
 		switch (c) {
 		case 'd':
 			select_device(optarg);
 			break;
 		case 's':
 			setup_sched(optarg);
+			break;
+		case 'w':
+			sscanf(optarg, "%u", &n_submission_workers);
+			break;
+		case 'S':
+			sscanf(optarg, "%u", &n_streams);
 			break;
 		case 'M':
 			setup_n_MTBs(optarg);

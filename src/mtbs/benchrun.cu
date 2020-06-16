@@ -4,13 +4,13 @@
 
 #include <pthread.h>
 
-#define N_WORKERS	10
+extern unsigned	n_submission_workers;
 
 extern CUcontext	context;
 
 static pthread_mutex_t	worker_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static pthread_t	threads[N_WORKERS];
+static pthread_t	*threads;
 
 static unsigned	n_benches_started;
 
@@ -62,8 +62,12 @@ start_benchruns(void)
 {
 	int	i;
 
-	for (i = 0; i < N_WORKERS; i++) {
-		pthread_create(&threads[i], NULL, worker_func, NULL);
+	threads = (pthread_t *)malloc(sizeof(pthread_t) * n_submission_workers);
+	for (i = 0; i < n_submission_workers; i++) {
+		if (pthread_create(&threads[i], NULL, worker_func, NULL) < 0) {
+			error("thread creation failed: too many submission workers?");
+			exit(10);
+		}
 	}
 }
 
@@ -72,7 +76,7 @@ wait_benchruns(void)
 {
 	int	i;
 
-	for (i = 0; i < N_WORKERS; i++) {
+	for (i = 0; i < n_submission_workers; i++) {
 		void	*ret;
 		pthread_join(threads[i], &ret);
 	}
