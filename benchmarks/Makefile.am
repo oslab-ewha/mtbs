@@ -1,1 +1,1 @@
-SUBDIRS = inhouse kmeans
+SUBDIRS = inhouse kmeans mandelbrot

@@ -9,6 +9,7 @@ BENCHMARK(mklc)
 BENCHMARK(gma)
 BENCHMARK(lma)
 BENCHMARK(kmeans)
+BENCHMARK(mandelbrot)
 BENCH_COOKARG(gma)
 BENCH_COOKARG(lma)
 BENCH_COOKARG(kmeans)
@@ -24,6 +25,7 @@ static benchinfo_t	benchinfos[] = {
 	{ "gma", GMA, cookarg_gma, bench_gma },
 	{ "lma", LMA, cookarg_lma, bench_lma },
 	{ "kmeans", KMEANS, cookarg_kmeans, bench_kmeans },
+	{ "mb", MANDELBROT, NULL, bench_mandelbrot },
 	{ NULL, 0, NULL, NULL }
 };
 
