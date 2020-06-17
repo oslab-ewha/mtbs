@@ -127,7 +127,25 @@ get_threadIdxX(void)
 		offset = get_offset_TB_dyn();
 		break;
 	}
-	return ((offset * N_THREADS_PER_mTB) % skr->dimBlock.x) + threadIdx.x % N_THREADS_PER_mTB;
+	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) + threadIdx.x % N_THREADS_PER_mTB;
+}
+
+__device__ int
+get_threadIdxY(void)
+{
+	skrun_t	*skr;
+	unsigned	offset;
+
+        switch (d_tbs_type) {
+	case TBS_TYPE_HW:
+		return threadIdx.y;
+	default:
+		skr = get_skr_dyn();
+		offset = get_offset_TB_dyn();
+		break;
+	}
+
+	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) / skr->dimBlock.x;
 }
 
 __device__ void

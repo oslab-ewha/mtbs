@@ -20,6 +20,7 @@ __device__ int get_blockIdxY(void);
 __device__ int get_blockDimX(void);
 __device__ int get_blockDimY(void);
 __device__ int get_threadIdxX(void);
+__device__ int get_threadIdxY(void);
 
 __device__ void sync_threads(void);
 
