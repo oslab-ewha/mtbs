@@ -61,7 +61,7 @@ get_blockIdxX(void)
 		skr = get_skr_dyn();
 		offset = get_offset_TB_dyn();
 	}
-	return ((offset * N_THREADS_PER_mTB) / skr->dimBlock.x) % skr->dimGrid.x;
+	return ((offset * N_THREADS_PER_mTB) / (skr->dimBlock.x * skr->dimBlock.y)) % skr->dimGrid.x;
 }
 
 __device__ int
@@ -78,7 +78,7 @@ get_blockIdxY(void)
 		offset = get_offset_TB_dyn();
 		break;
 	}
-	return ((offset * N_THREADS_PER_mTB) / skr->dimBlock.x) / skr->dimGrid.x;
+	return ((offset * N_THREADS_PER_mTB) / (skr->dimBlock.x * skr->dimBlock.y)) / skr->dimGrid.x;
 }
 
 __device__ int
@@ -127,7 +127,7 @@ get_threadIdxX(void)
 		offset = get_offset_TB_dyn();
 		break;
 	}
-	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) + threadIdx.x % N_THREADS_PER_mTB;
+	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) % skr->dimBlock.x + (threadIdx.x % N_THREADS_PER_mTB) % skr->dimBlock.x;
 }
 
 __device__ int
@@ -145,7 +145,7 @@ get_threadIdxY(void)
 		break;
 	}
 
-	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) / skr->dimBlock.x;
+	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) / skr->dimBlock.x + threadIdx.x % N_THREADS_PER_mTB / skr->dimBlock.x;
 }
 
 __device__ void
