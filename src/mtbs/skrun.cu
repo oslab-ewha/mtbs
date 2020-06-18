@@ -68,7 +68,7 @@ run_sub_kernel(skrid_t skrid)
 
 	skr = &d_skruns[skrid - 1];
 	res = run_sub_kernel_func(skr->skid, (void **)skr->args);
-	if (get_threadIdxX() == 0) {
+	if (get_blockIdxX() == 0 && get_blockIdxY() == 0 && get_threadIdxX() == 0 && get_threadIdxY() == 0) {
 		skr->res = res;
 	}
 }
