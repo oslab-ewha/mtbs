@@ -46,7 +46,7 @@ __device__ static volatile unsigned short	*mOTs;
 __device__ static volatile unsigned short	*mSTs;
 
 /* number of scheduled mtbs per skr */
-__device__ static volatile unsigned short	*skr_n_tbs_sched;
+__device__ static volatile unsigned	*skr_n_tbs_sched;
 
 __device__ static volatile unsigned	cur_skrid;
 
@@ -305,7 +305,7 @@ setup_dyn_sched(fedkern_info_t *_fkinfo)
 	for (i = 0; i < mTB_TOTAL_COUNT(); i++) {
 		mtb_epochs[i] = 0;
 	}
-	skr_n_tbs_sched = (unsigned short *)malloc(MAX_QUEUED_KERNELS * sizeof(unsigned short));
+	skr_n_tbs_sched = (unsigned *)malloc(MAX_QUEUED_KERNELS * sizeof(unsigned));
 	for (i = 0; i < MAX_QUEUED_KERNELS; i++) {
 		skr_n_tbs_sched[i] = 0;
 	}
