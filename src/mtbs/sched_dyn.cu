@@ -132,17 +132,9 @@ assign_tb(void)
 
 	off_tb_base = SKR_N_TBS_SCHED(skrid) * skr->n_mtbs_per_tb;
 	for (i = 0; i < skr->n_mtbs_per_tb; i++) {
-		if (SKRID(id_sm_sched, idx_mtb_start + i) == 0) {
-			SKRID(id_sm_sched, idx_mtb_start + i) = skrid;
-			mTB_OFFSET_TB(id_sm_sched, idx_mtb_start + i) = off_tb_base + i;
-			mTB_SYNC(id_sm_sched, idx_mtb_start + i) = 0;
-		}
-		else {
-			int	epoch_next = (EPOCH(id_sm_sched, idx_mtb_start + i) + 1) % EPOCH_MAX;
-			BRK_INDEX_EPOCH(id_sm_sched, idx_mtb_start + i, epoch_next) = skrid;
-			mTB_OFFSET_TB_EPOCH(id_sm_sched, idx_mtb_start + i, epoch_next) = off_tb_base + i;
-			mTB_SYNC_EPOCH(id_sm_sched, idx_mtb_start + i, epoch_next) = 0;
-		}
+		SKRID(id_sm_sched, idx_mtb_start + i) = skrid;
+		mTB_OFFSET_TB(id_sm_sched, idx_mtb_start + i) = off_tb_base + i;
+		mTB_SYNC(id_sm_sched, idx_mtb_start + i) = 0;
 	}
 	SKR_N_TBS_SCHED(skrid)++;
 	return TRUE;
@@ -231,15 +223,12 @@ advance_epoch_dyn(skrid_t skrid)
 {
 	unsigned	id_sm = get_smid() + 1;
 
-	if (IS_LEADER_THREAD()) {
-		EPOCH_MY(id_sm) = (EPOCH_MY(id_sm) + 1) % EPOCH_MAX;
-		atomicAdd(d_mtbs_done_cnts + skrid - 1, 1);
-	}
 	SYNCWARP();
 
-	/* clear out skrun id if epoch is recycled */
-	if (IS_LEADER_THREAD() && EPOCH_MY(id_sm) == 0) {
+	if (IS_LEADER_THREAD()) {
 		SKRID_MY(id_sm) = 0;
+		EPOCH_MY(id_sm) = (EPOCH_MY(id_sm) + 1) % EPOCH_MAX;
+		atomicAdd(d_mtbs_done_cnts + skrid - 1, 1);
 	}
 	SYNCWARP();
 }
