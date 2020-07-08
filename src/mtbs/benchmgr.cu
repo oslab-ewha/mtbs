@@ -14,8 +14,9 @@ BENCH_COOKARG(gma)
 BENCH_COOKARG(lma)
 BENCH_COOKARG(kmeans)
 
-benchrun_t	benchruns[MAX_BENCHES];
+benchrun_t	*benchruns;
 int	n_benches;
+int	n_benches_alloc;
 int	n_tbs_submitted;
 int	n_mtbs_submitted;
 
@@ -79,7 +80,8 @@ parse_args(const char *c_args, benchrun_t *brun)
 		return FALSE;
 	if (!parse_int(&c_args, (int *)&brun->dimBlock.y))
 		return FALSE;
-
+	brun->dimGrid.z = 1;
+	brun->dimBlock.z = 1;
 	for (i = 0; i < MAX_ARGS; i++) {
 		int	arg;
 
@@ -92,6 +94,22 @@ parse_args(const char *c_args, benchrun_t *brun)
 	return TRUE;
 }
 
+static benchrun_t *
+alloc_brun(void)
+{
+	benchrun_t	*brun;
+
+	if (n_benches == n_benches_alloc) {
+		benchruns = (benchrun_t *)realloc(benchruns, (n_benches + 100) * sizeof(benchrun_t));
+		n_benches_alloc += 100;
+	}
+
+	brun = benchruns + n_benches;
+	n_benches++;
+
+	return brun;
+}
+
 extern "C" BOOL
 add_bench(unsigned runcount, const char *code, const char *args)
 {
@@ -102,7 +120,7 @@ add_bench(unsigned runcount, const char *code, const char *args)
 	if (info == NULL)
 		return FALSE;
 	for (i = 0; i < runcount; i++) {
-		benchrun_t	*brun = benchruns + n_benches;
+		benchrun_t	*brun = alloc_brun();
 		int	n_tbs;
 
 		brun->info = info;
@@ -117,8 +135,6 @@ add_bench(unsigned runcount, const char *code, const char *args)
 		n_tbs = brun->dimGrid.x * brun->dimGrid.y;
 		n_tbs_submitted += n_tbs;
 		n_mtbs_submitted += (n_tbs * (brun->dimBlock.x * brun->dimBlock.y / N_THREADS_PER_mTB));
-		
-		n_benches++;
 	}
 
 	return TRUE;

@@ -8,7 +8,6 @@
 #include <cuda.h>
 
 #define MAX_QUEUED_KERNELS	2000
-#define MAX_BENCHES	1024
 #define MAX_ARGS	5
 #define N_THREADS_PER_mTB	32
 
@@ -74,7 +73,7 @@ __device__ extern skrun_t	*d_skruns;
 __device__ extern unsigned	*d_mtbs_done_cnts;
 
 extern sched_t		*sched;
-extern benchrun_t	benchruns[MAX_BENCHES];
+extern benchrun_t	*benchruns;
 
 extern void start_benchruns(void);
 extern void wait_benchruns(void);
