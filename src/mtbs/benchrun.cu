@@ -1,12 +1,8 @@
 #include "mtbs_cu.h"
 
-#include <cuda.h>
-
 #include <pthread.h>
 
 extern unsigned	n_submission_workers;
-
-extern CUcontext	context;
 
 static pthread_mutex_t	worker_mutex = PTHREAD_MUTEX_INITIALIZER;
 

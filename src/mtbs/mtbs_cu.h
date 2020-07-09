@@ -5,6 +5,8 @@
 
 #include "../../benchmarks/benchapi.h"
 
+#include <cuda.h>
+
 #define MAX_QUEUED_KERNELS	2000
 #define MAX_BENCHES	1024
 #define MAX_ARGS	5
@@ -16,6 +18,8 @@ extern unsigned	n_MTBs_per_sm;
 extern int	n_benches;
 extern int	n_tbs_submitted;
 extern int	n_mtbs_submitted;
+
+extern CUcontext	context;
 
 typedef int (*cookarg_func_t)(dim3 dimGrid, dim3 dimBlock, void *args[]);
 typedef int (*bench_func_t)(dim3 dimGrid, dim3 dimBlock, void *args[]);
@@ -30,7 +34,8 @@ typedef struct {
 
 typedef enum {
 	TBS_TYPE_HW = 1,
-	TBS_TYPE_SD
+	TBS_TYPE_SD_DYNAMIC,
+	TBS_TYPE_SD_STATIC,
 } tbs_type_t;
 
 typedef struct {

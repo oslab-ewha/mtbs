@@ -103,6 +103,11 @@ submit_skrun(skid_t skid, dim3 dimGrid, dim3 dimBlock, void *args[])
 
 	cur_skrid_host++;
 
+	if (sched->type == TBS_TYPE_SD_STATIC) {
+		extern void schedule_mtbs(skrid_t skrid, unsigned n_tbs, unsigned n_mtbs_per_tb);
+		schedule_mtbs(skrid, skrun.n_tbs, skrun.n_mtbs_per_tb);
+	}
+
 	pthread_mutex_unlock(&mutex);
 
 	return skrid;
@@ -197,11 +202,7 @@ skruns_checkfunc(void *arg)
 	while (!checker_done) {
 		unsigned	n_checks = cur_skrid_host - skrid_done_min;
 		if (n_checks > 0) {
-			unsigned	*mtbs_done_cnts = (unsigned *)malloc(sizeof(unsigned) * n_checks);
-			cudaMemcpyAsync(mtbs_done_cnts, g_mtbs_done_cnts + skrid_done_min, sizeof(unsigned) * n_checks, cudaMemcpyDeviceToHost, strm);
-			cudaStreamSynchronize(strm);
-			notify_done_skruns(mtbs_done_cnts, n_checks);
-			free(mtbs_done_cnts);
+			notify_done_skruns(g_mtbs_done_cnts, n_checks);
 		}
 		usleep(100);
 	}
@@ -234,7 +235,7 @@ init_skrun(void)
 	cudaStreamCreate(&strm_submit);
 
 	cudaMalloc(&g_skruns, sizeof(skrun_t) * MAX_QUEUED_KERNELS);
-	cudaMalloc(&g_mtbs_done_cnts, sizeof(unsigned) * MAX_QUEUED_KERNELS);
+	cudaMallocHost(&g_mtbs_done_cnts, sizeof(unsigned) * MAX_QUEUED_KERNELS);
 
 	info_n_mtbs = (unsigned *)calloc(MAX_QUEUED_KERNELS, sizeof(unsigned));
 	skrun_dones = (BOOL *)calloc(MAX_QUEUED_KERNELS, sizeof(BOOL));

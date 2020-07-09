@@ -1,6 +1,7 @@
 #include "mtbs_cu.h"
 
 extern void init_sched(void);
+extern void fini_sched(void);
 
 extern void wait_fedkern_initialized(fedkern_info_t *d_fkinfo);
 
@@ -88,6 +89,8 @@ run_sd_tbs(unsigned *pticks)
 	wait_benchruns();
 
 	*pticks = get_tickcount();
+
+	fini_sched();
 
 	stop_macro_TB(fkinfo);
 

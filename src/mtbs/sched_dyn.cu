@@ -3,8 +3,6 @@
 #include "mtbs_cu.h"
 #include "sched_cu.h"
 
-#define EPOCH_MAX		64
-
 #define mTB_ALLOC_TABLE_EPOCH(epch)	(mATs + mTB_TOTAL_COUNT() * (epch))
 #define mTB_ALLOC_TABLE(id_sm, idx)	(mATs + mTB_TOTAL_COUNT() * EPOCH(id_sm, idx))
 #define mTB_ALLOC_TABLE_MY(id_sm)	(mATs + mTB_TOTAL_COUNT() * EPOCH_MY(id_sm))
@@ -37,8 +35,8 @@ __device__ static volatile int	in_scheduling;
 __device__ static fedkern_info_t	*d_fkinfo;
 
 /* epoch directory for mTB allocation table */
-__device__ static volatile unsigned short	*mATs;
-__device__ static volatile unsigned	*mtb_epochs;
+__device__ volatile unsigned short	*mATs;
+__device__ volatile unsigned char	*mtb_epochs;
 
 /* offset in TB per mTB */
 __device__ static volatile unsigned short	*mOTs;
@@ -209,8 +207,10 @@ get_skrid_dyn(void)
 		if (going_to_shutdown || *(volatile BOOL *)&d_fkinfo->sched_done)
 			break;
 
-		if (IS_LEADER_THREAD()) {
-			run_schedule_in_kernel();
+		if (d_fkinfo->sched_id == TBS_TYPE_SD_DYNAMIC) {
+			if (IS_LEADER_THREAD()) {
+				run_schedule_in_kernel();
+			}
 		}
 		SYNCWARP();
 	}
@@ -279,10 +279,6 @@ setup_dyn_sched(fedkern_info_t *_fkinfo)
 	d_fkinfo = _fkinfo;
 
 	size = EPOCH_MAX * mTB_TOTAL_COUNT();
-	mATs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
-	for (i = 0; i < size; i++) {
-		mATs[i] = 0;
-	}
 
 	mOTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
 	mSTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
@@ -296,15 +292,6 @@ setup_dyn_sched(fedkern_info_t *_fkinfo)
 		mSTs[i] = 0;
 	}
 
-	mtb_epochs = (volatile unsigned *)malloc(mTB_TOTAL_COUNT() * sizeof(unsigned));
-	if (mtb_epochs == NULL) {
-		printf("out of memory: epochs table cannot be allocated\n");
-		going_to_shutdown = TRUE;
-		return;
-	}
-	for (i = 0; i < mTB_TOTAL_COUNT(); i++) {
-		mtb_epochs[i] = 0;
-	}
 	skr_n_tbs_sched = (unsigned *)malloc(MAX_QUEUED_KERNELS * sizeof(unsigned));
 	for (i = 0; i < MAX_QUEUED_KERNELS; i++) {
 		skr_n_tbs_sched[i] = 0;
