@@ -8,49 +8,64 @@ mandelbrot(void *args[])
 {
 	char	*out = (char *)args[0];
 	int	width = (int)(long long)args[1];
-	unsigned int	x_dim = get_blockIdxX() * get_blockDimX() + get_threadIdxX();
-	unsigned int	y_dim = get_blockIdxY() * get_blockDimY() + get_threadIdxY();
-	int	index = 3 * width * y_dim + x_dim * 3;
-	float	x_origin = ((float)x_dim / width) * 3.25 - 2;
-	float	y_origin = ((float)y_dim / width) * 2.5 - 1.25;
+	int	mx = (int)(long long)args[2];
+	int	my = (int)(long long)args[3];
+	int	x_dim, y_dim;
+	int	res = 0;
+	int	i, j;
 
-	float x = 0.0;
-	float y = 0.0;
+	x_dim = (get_blockIdxX() * get_blockDimX() + get_threadIdxX()) * mx;
+	y_dim = (get_blockIdxY() * get_blockDimY() + get_threadIdxY()) * my;
 
-	int	iteration = 0;
-	int	max_iteration = 2048;
-	while (x * x + y * y <= 14 && iteration < max_iteration) {
-		float xtemp = x * x - y * y + x_origin;
-		y = 2 * x * y + y_origin;
-		x = xtemp;
-		iteration++;
+	for (i = 0; i < mx; i++) {
+		for (j = 0; j < my; j++) {
+			int	index = 3 * width * (y_dim + j) + (x_dim + i) * 3;
+			float	x_origin = ((float)(x_dim + i)/ width) * 3.25 - 2;
+			float	y_origin = ((float)(y_dim + j)/ width) * 2.5 - 1.25;
+
+			float x = 0.0;
+			float y = 0.0;
+
+			int	iteration = 0;
+			int	max_iteration = 2048;
+			while (x * x + y * y <= 14 && iteration < max_iteration) {
+				float xtemp = x * x - y * y + x_origin;
+				y = 2 * x * y + y_origin;
+				x = xtemp;
+				iteration++;
+			}
+
+			if (iteration == max_iteration) {
+				out[index] = 0;
+				out[index + 1] = 0;
+				out[index + 2] = 0;
+			} else {
+				out[index] = iteration;
+				out[index + 1] = iteration;
+				out[index + 2] = iteration;
+			}
+			res = iteration;
+		}
 	}
 
-	if (iteration == max_iteration) {
-		out[index] = 0;
-		out[index + 1] = 0;
-		out[index + 2] = 0;
-	} else {
-		out[index] = iteration;
-		out[index + 1] = iteration;
-		out[index + 2] = iteration;
-	}
-	return iteration;
+	return res;
 }
 
 int
 bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
-	int	width;
-	int	height;
+	int	width, height, mx, my;
 	char	*image, *host_image;
 	size_t	buffer_size;
 	int		res;
 	skrid_t		skrid;
 	vstream_t	strm;
 
-	width = dimGrid.x * dimBlock.x;
-	height = dimGrid.y * dimBlock.y;
+	width = (int)(long long)args[0];
+	height = (int)(long long)args[1];
+
+	mx = width / (dimGrid.x * dimBlock.x);
+	my = height / (dimGrid.y * dimBlock.y);
 
 	// Multiply by 3 here, since we need red, green and blue for each pixel
 	buffer_size = sizeof(char) * width * height * 3;
@@ -63,7 +78,8 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 
 	args[0] = image;
 	args[1] = (void *)(long long)width;
-	args[2] = (void *)(long long)height;
+	args[2] = (void *)(long long)mx;
+	args[3] = (void *)(long long)my;
 
 	strm = create_vstream();
 	skrid = launch_kernel(MANDELBROT, strm, dimGrid, dimBlock, args);

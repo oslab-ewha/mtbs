@@ -25,6 +25,7 @@ usage(void)
 "  gma: global memory access(in-house)\n"
 "  lma: localized memory access(in-house)\n"
 "  kmeans: kmeans\n"
+"  mb: mandelbrot\n"
 " <arg string>:\n"
 "   NOTE: First 4 arguments are <grid width>,<grid height>,<tb width>,<tb height>\n"
 "   lc: <calculation type>,<iterations>,<# iterations for calculation type greater than 3>\n"
@@ -35,6 +36,7 @@ usage(void)
 "   gma: <global mem in KB>,<iterations>\n"
 "   lma: <chunk size in byte>,<reference span>,<iterations>\n"
 "   kmeans: <# of points per thread>,<# of clusters>,<# of features>,<iterations>\n"
+"   mb: <image width>,<image height>\n"
 		);
 }
 
