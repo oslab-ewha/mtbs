@@ -325,6 +325,7 @@ run_tbs(unsigned *pticks)
 	BOOL	res;
 
 	init_skrun();
+	init_benchruns();
 	init_streams();
 
 	if (sched->type == TBS_TYPE_HW)

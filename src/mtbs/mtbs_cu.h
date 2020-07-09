@@ -75,6 +75,7 @@ __device__ extern unsigned	*d_mtbs_done_cnts;
 extern sched_t		*sched;
 extern benchrun_t	*benchruns;
 
+extern void init_benchruns(void);
 extern void start_benchruns(void);
 extern void wait_benchruns(void);
 

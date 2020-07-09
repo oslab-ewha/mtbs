@@ -99,8 +99,9 @@ submit_skrun(skid_t skid, dim3 dimGrid, dim3 dimBlock, void *args[])
 	info_n_mtbs[skrid - 1] = skrun.n_tbs * skrun.n_mtbs_per_tb;
 
 	cudaMemcpyAsync(g_skruns + cur_skrid_host, &skrun, sizeof(skrun_t), cudaMemcpyHostToDevice, strm_submit);
+#if 0
 	cudaStreamSynchronize(strm_submit);
-
+#endif
 	cur_skrid_host++;
 
 	if (sched->type == TBS_TYPE_SD_STATIC) {
@@ -122,10 +123,16 @@ launch_kernel(skid_t skid, vstream_t strm, dim3 dimGrid, dim3 dimBlock, void *ar
 	skrid = submit_skrun(skid, dimGrid, dimBlock, args);
 
 	if (sched->type == TBS_TYPE_HW) {
+		cudaError_t	err;
+
 		if (strm != NULL) {
 			cstrm = ((vstrm_t)strm)->cudaStrm;
 		}
 		sub_kernel_func<<<dimGrid, dimBlock, 0, cstrm>>>(skrid);
+		err = cudaGetLastError();
+		if(err != 0) {
+			error("hw kernel error: %s", cudaGetErrorString(err));
+		}
 	}
 	return skrid;
 }

@@ -5,6 +5,7 @@
 extern unsigned	n_submission_workers;
 
 static pthread_mutex_t	worker_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t	worker_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_t	*threads;
 
@@ -42,6 +43,11 @@ worker_func(void *ctx)
 {
 	cuCtxSetCurrent(context);
 
+	/* wait for start signal */
+	pthread_mutex_lock(&worker_mutex);
+	pthread_cond_wait(&worker_cond, &worker_mutex);
+	pthread_mutex_unlock(&worker_mutex);
+
 	while (TRUE) {
 		benchrun_t	*brun = get_benchrun();
 
@@ -56,15 +62,9 @@ worker_func(void *ctx)
 void
 start_benchruns(void)
 {
-	int	i;
-
-	threads = (pthread_t *)malloc(sizeof(pthread_t) * n_submission_workers);
-	for (i = 0; i < n_submission_workers; i++) {
-		if (pthread_create(&threads[i], NULL, worker_func, NULL) < 0) {
-			error("thread creation failed: too many submission workers?");
-			exit(10);
-		}
-	}
+	pthread_mutex_lock(&worker_mutex);
+	pthread_cond_broadcast(&worker_cond);
+	pthread_mutex_unlock(&worker_mutex);
 }
 
 void
@@ -76,4 +76,19 @@ wait_benchruns(void)
 		void	*ret;
 		pthread_join(threads[i], &ret);
 	}
+}
+
+void
+init_benchruns(void)
+{
+	int	i;
+
+	threads = (pthread_t *)malloc(sizeof(pthread_t) * n_submission_workers);
+	for (i = 0; i < n_submission_workers; i++) {
+		if (pthread_create(&threads[i], NULL, worker_func, NULL) < 0) {
+			error("thread creation failed: too many submission workers?");
+			exit(10);
+		}
+	}
+	usleep(1000000);
 }

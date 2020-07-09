@@ -42,7 +42,13 @@ init_streams(void)
 
 	vStrms = (vStrm_t *)malloc(sizeof(vStrm_t) * n_streams);
 	for (i = 0; i < n_streams; i++) {
-		cudaStreamCreate(&vStrms[i].cudaStrm);
+		cudaError_t	err;
+
+		err = cudaStreamCreate(&vStrms[i].cudaStrm);
+		if (err != cudaSuccess) {
+			error("stream creation failed: too many streams?");
+			exit(11);
+		}
 		vStrms[i].refcnt = 0;
 	}
 }
