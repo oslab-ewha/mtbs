@@ -252,8 +252,10 @@ init_skrun(void)
 	dim3 dimGrid(1,1), dimBlock(1,1);
 	kernel_init_skrun<<<dimGrid, dimBlock>>>(sched->type, g_skruns, g_mtbs_done_cnts);
 	err = cudaGetLastError();
-	if (err != cudaSuccess)
+	if (err != cudaSuccess) {
 		error("failed to initialize skrun: %s\n", cudaGetErrorString(err));
+		exit(12);
+	}
 	else
 		cudaDeviceSynchronize();
 }
