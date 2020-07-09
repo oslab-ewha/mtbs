@@ -69,7 +69,9 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 	skrid = launch_kernel(MANDELBROT, strm, dimGrid, dimBlock, args);
 	wait_kernel(skrid, strm, &res);
 
-	cudaMemcpyAsync(host_image, image, buffer_size, cudaMemcpyDeviceToHost, (cudaStream_t)strm);
+	cudaMemcpyAsync(host_image, image, buffer_size, cudaMemcpyDeviceToHost, *(cudaStream_t *)strm);
+	cudaStreamSynchronize(*(cudaStream_t *)strm);
+
 	destroy_vstream(strm);
 
 #if 0
