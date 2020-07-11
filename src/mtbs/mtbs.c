@@ -11,8 +11,8 @@ usage(void)
 "     supported scheduling: hw(hardware scheduling, default)\n"
 "                           dynamic(dynamic software-defined scheduling)\n"
 "                           static(static software-defined scheduling)\n"
-"  -w <# of workers>: # of sumission worker, default: 30\n"
-"  -S <# of pre-allocated streams>: # of streams, default: 120\n"
+"  -w <# of workers>: # of sumission worker, default: 128\n"
+"  -S <# of pre-allocated streams>: # of streams, default: 128\n"
 "  -M <MTB count per sm>\n"
 "  -T <thread count per MTB>\n"
 "  -h: help\n"
@@ -43,8 +43,8 @@ usage(void)
 unsigned	devno;
 unsigned	arg_n_MTBs_per_sm;
 unsigned	arg_n_threads_per_MTB;
-unsigned	n_submission_workers = 30;
-unsigned	n_streams = 120;
+unsigned	n_submission_workers = 128;
+unsigned	n_streams = 128;
 
 static int
 parse_benchargs(int argc, char *argv[])
