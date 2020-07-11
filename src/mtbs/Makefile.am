@@ -16,6 +16,7 @@ mtbs_LDADD = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
 		../../benchmarks/inhouse/lma/liblma.a \
 		../../benchmarks/kmeans/libkmeans.a \
 		../../benchmarks/mandelbrot/libmandelbrot.a \
+		../../benchmarks/mm/libmm.a \
 		../../benchmarks/inhouse/irregular/libirregular.a \
 		-lcuda -lcudart
 

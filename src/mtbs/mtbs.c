@@ -27,6 +27,7 @@ usage(void)
 "  kmeans: kmeans\n"
 "  mb: mandelbrot\n"
 "  irr: irregular task(in-house)\n"
+"  mm: matrix multiplication\n"
 " <arg string>:\n"
 "   NOTE: First 4 arguments are <grid width>,<grid height>,<tb width>,<tb height>\n"
 "   lc: <calculation type>,<iterations>,<# iterations for calculation type greater than 3>\n"
@@ -39,6 +40,7 @@ usage(void)
 "   kmeans: <# of points per thread>,<# of clusters>,<# of features>,<iterations>\n"
 "   mb: <image width>,<image height>\n"
 "   irr: <# of kernels>,<iterations>,<modular base>\n"
+"   mm: <matrix m>,<n>,<k>\n"
 		);
 }
 
