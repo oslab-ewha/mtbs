@@ -44,6 +44,7 @@ AC_CONFIG_FILES([Makefile
                  benchmarks/inhouse/mklc/Makefile
                  benchmarks/inhouse/gma/Makefile
                  benchmarks/inhouse/lma/Makefile
+                 benchmarks/inhouse/irregular/Makefile
                  benchmarks/mandelbrot/Makefile
                  benchmarks/kmeans/Makefile])
 

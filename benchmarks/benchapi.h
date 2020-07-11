@@ -7,6 +7,7 @@
 #define LMA		((skid_t)4)
 #define KMEANS		((skid_t)5)
 #define MANDELBROT	((skid_t)6)
+#define IRREGULAR	((skid_t)7)
 
 typedef unsigned char	skid_t;
 typedef unsigned short	skrid_t;

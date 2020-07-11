@@ -38,6 +38,7 @@ SK_FUNCS(gma)
 SK_FUNCS(lma)
 SK_FUNCS(kmeans)
 SK_FUNCS(mandelbrot)
+SK_FUNCS(irregular)
 
 static __device__ int
 run_sub_kernel_func(skid_t skid, void *args[])
@@ -55,6 +56,8 @@ run_sub_kernel_func(skid_t skid, void *args[])
 		return kmeans(args);
 	case MANDELBROT:
 		return mandelbrot(args);
+	case IRREGULAR:
+		return irregular(args);
 	default:
 		return 0;
 	}
