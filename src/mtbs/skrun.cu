@@ -103,7 +103,6 @@ submit_skrun(skid_t skid, dim3 dimGrid, dim3 dimBlock, void *args[])
 
 	skrid = cur_skrid_host + 1;
 	info_n_mtbs[skrid - 1] = skrun.n_tbs * skrun.n_mtbs_per_tb;
-
 	cudaMemcpyAsync(g_skruns + cur_skrid_host, &skrun, sizeof(skrun_t), cudaMemcpyHostToDevice, strm_submit);
 #if 0
 	cudaStreamSynchronize(strm_submit);
@@ -187,11 +186,13 @@ notify_done_skruns(unsigned *mtbs_done_cnts, unsigned n_checks)
 	pthread_mutex_lock(&mutex);
 
 	for (i = 0; i < n_checks; i++) {
-		if (skrun_dones[i + skrid_done_min])
-			continue;
-		if (mtbs_done_cnts[i] == info_n_mtbs[i + skrid_done_min]) {
-			notify = TRUE;
-			skrun_dones[i + skrid_done_min] = TRUE;
+		if (!skrun_dones[i + skrid_done_min]) {
+			if (mtbs_done_cnts[i + skrid_done_min] == info_n_mtbs[i + skrid_done_min]) {
+				notify = TRUE;
+				skrun_dones[i + skrid_done_min] = TRUE;
+			}
+		}
+		if (skrun_dones[i + skrid_done_min]) {
 			if (min_new == i + skrid_done_min) {
 				min_new++;
 			}
