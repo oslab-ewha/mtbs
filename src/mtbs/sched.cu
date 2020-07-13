@@ -114,7 +114,8 @@ find_mtbs_on_sm(unsigned id_sm, unsigned n_mtbs, unsigned char *epochs)
 		int	epoch = EPOCH_HOST(id_sm, i);
 		int	epoch_alloc = EPOCH_HOST_ALLOC(id_sm, i);
 
-		if (NEXT_EPOCH(epoch_alloc) == epoch)
+		/* Next epoch entry should be set to zero to proect overrun */
+		if (NEXT_EPOCH(NEXT_EPOCH(epoch_alloc)) == epoch)
 			continue;
 
 		epochs[i - 1] = epoch_alloc;
@@ -152,7 +153,9 @@ set_mtbs_skrid(sched_ctx_t *pctx, unsigned id_sm, unsigned n_mtbs, unsigned char
 		if (epoch == EPOCH_MAX)
 			continue;
 		SKRID_EPOCH_HOST(epoch, id_sm, i) = pctx->skrid;
+		SKRID_EPOCH_HOST(NEXT_EPOCH(epoch), id_sm, i) = 0;
 		apply_mAT_uprange(pctx, epoch, id_sm, i);
+		apply_mAT_uprange(pctx, NEXT_EPOCH(epoch), id_sm, i);
 		EPOCH_HOST_ALLOC(id_sm, i) = NEXT_EPOCH(epoch);
 		n_mtbs_cur++;
 		if (n_mtbs_cur == n_mtbs)
