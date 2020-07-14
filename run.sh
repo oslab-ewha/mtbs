@@ -20,7 +20,7 @@ MTBS_ARGS=${MTBS_ARGS}
 
 n_tests=1
 n_sms=1
-schedules="hw,sd"
+schedules="hw,dynamic"
 n_tbs_per_sm="1,2,3,4,5,6,7,8"
 n_ths_per_tb="32,64,128,256,512,1024"
 multirun_range=
