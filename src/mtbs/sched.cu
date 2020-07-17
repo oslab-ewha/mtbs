@@ -71,9 +71,11 @@ extern BOOL run_sd_tbs(unsigned *pticks);
 
 extern void assign_fedkern_brun(fedkern_info_t *fkinfo,  benchrun_t *brun, unsigned char skrid);
 
+extern void init_mem(void);
 extern void init_skrun(void);
 extern void fini_skrun(void);
 extern void init_streams(void);
+extern void fini_mem(void);
 
 extern "C" void
 setup_sched(const char *strpol)
@@ -290,8 +292,8 @@ init_sched(void)
 	n_max_mtbs_per_sm = n_threads_per_MTB / N_THREADS_PER_mTB * n_MTBs_per_sm;
 	n_max_mtbs = n_sm_count * n_max_mtbs_per_sm;
 
-	cudaMalloc(&g_mATs, EPOCH_MAX * n_max_mtbs * sizeof(unsigned short));
-	cudaMalloc(&g_mtb_epochs, n_max_mtbs);
+	g_mATs = (unsigned short *)mtbs_cudaMalloc(EPOCH_MAX * n_max_mtbs * sizeof(unsigned short));
+	g_mtb_epochs = (unsigned char *)mtbs_cudaMalloc(n_max_mtbs);
 
 	dim3 dimGrid(1,1), dimBlock(1,1);
 	kernel_init_sched<<<dimGrid, dimBlock>>>(n_max_mtbs, g_mATs, g_mtb_epochs);
@@ -320,6 +322,9 @@ fini_sched(void)
 
 	host_scheduler_done = TRUE;
 	pthread_join(host_scheduler, &retval);
+
+	mtbs_cudaFree(g_mATs);
+	mtbs_cudaFree(g_mtb_epochs);
 }
 
 extern "C" BOOL
@@ -327,6 +332,7 @@ run_tbs(unsigned *pticks)
 {
 	BOOL	res;
 
+	init_mem();
 	init_skrun();
 	init_benchruns();
 	init_streams();
@@ -337,6 +343,7 @@ run_tbs(unsigned *pticks)
 		res = run_sd_tbs(pticks);
 
 	fini_skrun();
+	fini_mem();
 
 	return res;
 }

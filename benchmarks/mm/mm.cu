@@ -67,7 +67,8 @@ bench_mm(dim3 dimGrid, dim3 dimBlock, void *args[])
 	fill_matrix(matA, m, n);
 	fill_matrix(matB, n, k);
 
-	if (cudaMalloc((void **)&d_mat, sizeof(int) * (m * n + n * k + m * k)) != cudaSuccess) {
+	d_mat = (int *)mtbs_cudaMalloc(sizeof(int) * (m * n + n * k + m * k));
+	if (d_mat == NULL) {
 		printf("failed to allocate mem: buffer size: %ld\n", sizeof(int) * m * n + sizeof(int) * n * k);
 		return -1;
 	}
@@ -91,10 +92,8 @@ bench_mm(dim3 dimGrid, dim3 dimBlock, void *args[])
 
 	destroy_vstream(strm);
 
-#if 0
-	//TODO: cudaFree freeze the system
-	cudaFree(d_mat);
-#endif
+	mtbs_cudaFree(d_mat);
+
 	free(matA);
 	free(matB);
 	free(matC);

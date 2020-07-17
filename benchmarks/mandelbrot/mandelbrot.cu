@@ -70,7 +70,8 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 	// Multiply by 3 here, since we need red, green and blue for each pixel
 	buffer_size = sizeof(char) * width * height * 3;
 
-	if (cudaMalloc((void **)&image, buffer_size) != cudaSuccess) {
+	image = (char *)mtbs_cudaMalloc(buffer_size);
+	if (image == NULL) {
 		printf("failed to allocate mem: buffer size: %ld\n", buffer_size);
 		return -1;
 	}
@@ -90,10 +91,8 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 
 	destroy_vstream(strm);
 
-#if 0
-	//TODO: cudaFree freeze the system
-	cudaFree(image);
-#endif
+	mtbs_cudaFree(image);
+
 	free(host_image);
 
 	return res;

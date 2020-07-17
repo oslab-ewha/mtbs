@@ -17,7 +17,7 @@ create_fedkern_info(void)
 	fkinfo->n_max_mtbs_per_MTB = n_max_mtbs_per_sm / n_MTBs_per_sm;
 	fkinfo->sched_done = FALSE;
 
-	cudaMalloc(&g_fkinfo, sizeof(fedkern_info_t));
+	g_fkinfo = (fedkern_info_t *)mtbs_cudaMalloc(sizeof(fedkern_info_t));
 	cudaMemcpy(g_fkinfo, fkinfo, sizeof(fedkern_info_t), cudaMemcpyHostToDevice);
 
 	return g_fkinfo;
@@ -26,7 +26,7 @@ create_fedkern_info(void)
 void
 free_fedkern_info(fedkern_info_t *g_fkinfo)
 {
-	cudaFree(g_fkinfo);
+	mtbs_cudaFree(g_fkinfo);
 }
 
 void

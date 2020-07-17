@@ -248,7 +248,7 @@ init_skrun(void)
 
 	cudaStreamCreate(&strm_submit);
 
-	cudaMalloc(&g_skruns, sizeof(skrun_t) * MAX_QUEUED_KERNELS);
+	g_skruns = (skrun_t *)mtbs_cudaMalloc(sizeof(skrun_t) * MAX_QUEUED_KERNELS);
 	cudaMallocHost(&g_mtbs_done_cnts, sizeof(unsigned) * MAX_QUEUED_KERNELS);
 
 	info_n_mtbs = (unsigned *)calloc(MAX_QUEUED_KERNELS, sizeof(unsigned));
@@ -274,4 +274,6 @@ fini_skrun(void)
 
 	checker_done = TRUE;
 	pthread_join(checker, &retval);
+
+	mtbs_cudaFree(g_skruns);
 }

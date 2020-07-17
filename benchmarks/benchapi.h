@@ -33,4 +33,7 @@ void wait_kernel(skrid_t skrid, vstream_t strm, int *res);
 vstream_t create_vstream(void);
 void destroy_vstream(vstream_t vstream);
 
+void *mtbs_cudaMalloc(unsigned size);
+void mtbs_cudaFree(void *ptr);
+
 #endif
