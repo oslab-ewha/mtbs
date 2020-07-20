@@ -81,7 +81,7 @@ get_sched_skrid(void)
 
 			if (SKR_N_TBS_SCHED(skrid) == skr->n_tbs) {
 				skr->skid = 0;
-				cur_skrid = (cur_skrid + 1) % MAX_QUEUED_KERNELS;
+				cur_skrid = (cur_skrid + 1) % dn_queued_kernels;
 				continue;
 			}
 			return skrid;
@@ -293,8 +293,8 @@ setup_dyn_sched(fedkern_info_t *_fkinfo)
 		mSTs[i] = 0;
 	}
 
-	skr_n_tbs_sched = (unsigned *)malloc(MAX_QUEUED_KERNELS * sizeof(unsigned));
-	for (i = 0; i < MAX_QUEUED_KERNELS; i++) {
+	skr_n_tbs_sched = (unsigned *)malloc(dn_queued_kernels * sizeof(unsigned));
+	for (i = 0; i < dn_queued_kernels; i++) {
 		skr_n_tbs_sched[i] = 0;
 	}
 }

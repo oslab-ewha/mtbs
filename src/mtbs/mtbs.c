@@ -11,6 +11,7 @@ usage(void)
 "     supported scheduling: hw(hardware scheduling, default)\n"
 "                           dynamic(dynamic software-defined scheduling)\n"
 "                           static(static software-defined scheduling)\n"
+"  -K <# of queued kernels>\n"
 "  -w <# of workers>: # of sumission worker, default: 128\n"
 "  -S <# of pre-allocated streams>: # of streams, default: 128\n"
 "  -M <MTB count per sm>\n"
@@ -118,13 +119,16 @@ parse_options(int argc, char *argv[])
 {
 	int	c;
 
-	while ((c = getopt(argc, argv, "d:s:w:S:M:T:h")) != -1) {
+	while ((c = getopt(argc, argv, "d:s:K:w:S:M:T:h")) != -1) {
 		switch (c) {
 		case 'd':
 			select_device(optarg);
 			break;
 		case 's':
 			setup_sched(optarg);
+			break;
+		case 'K':
+			sscanf(optarg, "%u", &n_submission_workers);
 			break;
 		case 'w':
 			sscanf(optarg, "%u", &n_submission_workers);

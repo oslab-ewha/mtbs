@@ -18,6 +18,8 @@ extern int	n_benches;
 extern int	n_tbs_submitted;
 extern int	n_mtbs_submitted;
 
+extern unsigned		n_queued_kernels;
+
 extern CUcontext	context;
 
 typedef unsigned short	skrid_t;
@@ -71,6 +73,7 @@ typedef struct {
 } sched_t;
 
 __device__ extern tbs_type_t	d_tbs_type;
+__device__ extern unsigned	dn_queued_kernels;
 __device__ extern skrun_t	*d_skruns;
 __device__ extern unsigned	*d_mtbs_done_cnts;
 
