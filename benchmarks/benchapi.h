@@ -11,7 +11,7 @@
 #define MM		((skid_t)8)
 
 typedef unsigned char	skid_t;
-typedef unsigned short	skrid_t;
+typedef void *	sk_t;
 typedef void *	vstream_t;
 
 __device__ unsigned get_random(unsigned randx);
@@ -27,8 +27,8 @@ __device__ int get_threadIdxY(void);
 
 __device__ void sync_threads(void);
 
-skrid_t launch_kernel(skid_t skid, vstream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[]);
-void wait_kernel(skrid_t skrid, vstream_t strm, int *res);
+sk_t launch_kernel(skid_t skid, vstream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[]);
+void wait_kernel(sk_t sk, vstream_t strm, int *res);
 
 vstream_t create_vstream(void);
 void destroy_vstream(vstream_t vstream);

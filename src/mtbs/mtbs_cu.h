@@ -7,7 +7,7 @@
 
 #include <cuda.h>
 
-#define MAX_QUEUED_KERNELS	2000
+#define MAX_QUEUED_KERNELS	512
 #define MAX_ARGS	5
 #define N_THREADS_PER_mTB	32
 
@@ -19,6 +19,8 @@ extern int	n_tbs_submitted;
 extern int	n_mtbs_submitted;
 
 extern CUcontext	context;
+
+typedef unsigned short	skrid_t;
 
 typedef int (*cookarg_func_t)(dim3 dimGrid, dim3 dimBlock, void *args[]);
 typedef int (*bench_func_t)(dim3 dimGrid, dim3 dimBlock, void *args[]);
@@ -84,7 +86,7 @@ __device__ void sleep_in_kernel(void);
 __device__ unsigned find_mtb_start(unsigned id_sm, unsigned idx_mtb_start, unsigned n_mtbs);
 __device__ unsigned get_n_active_mtbs(unsigned id_sm);
 
-__device__ void run_sub_kernel(skrid_t skrid);
+__device__ void run_sub_kernel(skrun_t *skr);
 
 fedkern_info_t *create_fedkern_info(void);
 void free_fedkern_info(fedkern_info_t *fkinfo);

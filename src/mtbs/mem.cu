@@ -19,7 +19,8 @@ typedef struct _mem {
 } mem_t;
 
 unsigned long long	max_memsize = 500 * 1024 * 1024;
-unsigned long long	cur_memsize;
+static unsigned long long	cur_memsize;
+static unsigned		memchunk = MEMCHUNK;
 
 static struct list_head	hash_head[N_HASH];
 
@@ -356,7 +357,7 @@ mtbs_cudaMalloc(unsigned size)
 
 	if (size == 0)
 		return NULL;
-	if (size > MEMCHUNK) {
+	if (size > memchunk) {
 		error("too large memory size: %u", size);
 		exit(1);
 	}
@@ -533,8 +534,8 @@ init_mem(void)
 		unsigned	size = max_memsize - cur_memsize;
 		cudaError_t	err;
 
-		if (size > MEMCHUNK)
-			size = MEMCHUNK;
+		if (size > memchunk)
+			size = memchunk;
 		else {
 			unsigned	idx = get_mem_unit_idx_le(size);
 			if (idx == N_MAX_UNITS)
@@ -542,8 +543,13 @@ init_mem(void)
 			size = MIN_UNIT << idx;
 		}
 		err = cudaMalloc(&ptr, size);
-		if (err != cudaSuccess)
+		if (err != cudaSuccess) {
+			if (memchunk > MIN_UNIT && cur_memsize == 0) {
+				memchunk /= 2;
+				continue;
+			}
 			break;
+		}
 
 		add_mem(ptr, size);
 		cur_memsize += size;

@@ -53,7 +53,7 @@ bench_mm(dim3 dimGrid, dim3 dimBlock, void *args[])
 	int	*matA, *matB, *matC;
 	int	*d_mat;
 	int		res;
-	skrid_t		skrid;
+	sk_t		sk;
 	vstream_t	strm;
 
 	m = (int)(long long)args[0];
@@ -84,8 +84,8 @@ bench_mm(dim3 dimGrid, dim3 dimBlock, void *args[])
 	cudaMemcpyAsync(d_mat + m * n, matB, sizeof(int) * n * k, cudaMemcpyHostToDevice, *(cudaStream_t *)strm);
 	cudaStreamSynchronize(*(cudaStream_t *)strm);
 
-	skrid = launch_kernel(MM, strm, dimGrid, dimBlock, args);
-	wait_kernel(skrid, strm, &res);
+	sk = launch_kernel(MM, strm, dimGrid, dimBlock, args);
+	wait_kernel(sk, strm, &res);
 
 	cudaMemcpyAsync(matC, d_mat + (m * n + n * k), sizeof(int) * (m * k), cudaMemcpyDeviceToHost, *(cudaStream_t *)strm);
 	cudaStreamSynchronize(*(cudaStream_t *)strm);

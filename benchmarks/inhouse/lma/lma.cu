@@ -72,12 +72,12 @@ int
 bench_lma(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
 	vstream_t	strm;
-	skrid_t	skrid;
+	sk_t	sk;
 	int	res;
 
 	strm = create_vstream();
-	skrid = launch_kernel(LMA, strm, dimGrid, dimBlock, args);
-	wait_kernel(skrid, strm, &res);
+	sk = launch_kernel(LMA, strm, dimGrid, dimBlock, args);
+	wait_kernel(sk, strm, &res);
 	destroy_vstream(strm);
 
 	return res;

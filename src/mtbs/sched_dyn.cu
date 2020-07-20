@@ -80,7 +80,8 @@ get_sched_skrid(void)
 			skrid_t	skrid = cur_skrid + 1;
 
 			if (SKR_N_TBS_SCHED(skrid) == skr->n_tbs) {
-				cur_skrid++;
+				skr->skid = 0;
+				cur_skrid = (cur_skrid + 1) % MAX_QUEUED_KERNELS;
 				continue;
 			}
 			return skrid;

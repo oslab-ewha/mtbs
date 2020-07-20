@@ -22,12 +22,14 @@ kernel_macro_TB(fedkern_info_t *fkinfo)
 
 	while (!going_to_shutdown) {
 		skrid_t	skrid;
+		skrun_t	*skr;
 
 		skrid = get_skrid_dyn();
 		if (skrid == 0)
 			return;
 
-		run_sub_kernel(skrid);
+		skr = &d_skruns[skrid - 1];
+		run_sub_kernel(skr);
 
 		advance_epoch_dyn(skrid);
 	}

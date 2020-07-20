@@ -30,27 +30,27 @@ mklc(void *args[])
 int
 bench_mklc(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
-	skrid_t	*skrids;
+	sk_t	*sks;
 	vstream_t	*strms;
 	int	count;
 	int	res;
 	int	i;
 
 	count = (int)(long long)args[0];
-	skrids = (skrid_t *)malloc(sizeof(skrid_t) * count);
+	sks = (sk_t *)malloc(sizeof(sk_t) * count);
 	strms = (vstream_t *)malloc(sizeof(vstream_t) * count);
 	for (i = 0; i < count; i++) {
 		strms[i] = create_vstream();
-		skrids[i] = launch_kernel(MKLC, strms[i], dimGrid, dimBlock, args + 1);
+		sks[i] = launch_kernel(MKLC, strms[i], dimGrid, dimBlock, args + 1);
 	}
 	
 	for (i = 0; i < count; i++)
-		wait_kernel(skrids[i], strms[i], &res);
+		wait_kernel(sks[i], strms[i], &res);
 
 	for (i = 0; i < count; i++)
 		destroy_vstream(strms[i]);
 
-	free(skrids);
+	free(sks);
 	free(strms);
 
 	return res;

@@ -58,7 +58,7 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 	char	*image, *host_image;
 	size_t	buffer_size;
 	int		res;
-	skrid_t		skrid;
+	sk_t		sk;
 	vstream_t	strm;
 
 	width = (int)(long long)args[0];
@@ -83,8 +83,8 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 	args[3] = (void *)(long long)my;
 
 	strm = create_vstream();
-	skrid = launch_kernel(MANDELBROT, strm, dimGrid, dimBlock, args);
-	wait_kernel(skrid, strm, &res);
+	sk = launch_kernel(MANDELBROT, strm, dimGrid, dimBlock, args);
+	wait_kernel(sk, strm, &res);
 
 	cudaMemcpyAsync(host_image, image, buffer_size, cudaMemcpyDeviceToHost, *(cudaStream_t *)strm);
 	cudaStreamSynchronize(*(cudaStream_t *)strm);
