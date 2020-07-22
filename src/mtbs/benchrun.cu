@@ -4,6 +4,8 @@
 
 extern unsigned	n_submission_workers;
 
+static unsigned	n_readys;
+
 static pthread_mutex_t	worker_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t	worker_cond = PTHREAD_COND_INITIALIZER;
 
@@ -45,6 +47,7 @@ worker_func(void *ctx)
 
 	/* wait for start signal */
 	pthread_mutex_lock(&worker_mutex);
+	n_readys++;
 	pthread_cond_wait(&worker_cond, &worker_mutex);
 	pthread_mutex_unlock(&worker_mutex);
 
@@ -62,7 +65,13 @@ worker_func(void *ctx)
 void
 start_benchruns(void)
 {
+again:
 	pthread_mutex_lock(&worker_mutex);
+	if (n_readys < n_submission_workers) {
+		pthread_mutex_unlock(&worker_mutex);
+		usleep(1);
+		goto again;
+	}
 	pthread_cond_broadcast(&worker_cond);
 	pthread_mutex_unlock(&worker_mutex);
 }
