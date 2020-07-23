@@ -93,9 +93,6 @@ select_device(const char *str_devno)
 		error("%s: invalid GPU device number", str_devno);
 		return;
 	}
-	if (!select_gpu_device(devno)) {
-		error("failed to set GPU device: %s", str_devno);
-	}
 }
 
 static void

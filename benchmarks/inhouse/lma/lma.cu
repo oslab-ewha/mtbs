@@ -2,6 +2,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <cuda.h>
+
 #include "../../benchapi.h"
 
 __device__ int
@@ -41,7 +43,6 @@ cookarg_lma(dim3 dimGrid, dim3 dimBlock, void *args[])
 	int	refspan = (int)(long long)args[1];
 	char	*buf;
 	int	i;
-	cudaError_t	err;
 
 	if (dimGrid.x * dimGrid.y < refspan * 2) {
 		printf("too small TB's\n");
@@ -53,16 +54,16 @@ cookarg_lma(dim3 dimGrid, dim3 dimBlock, void *args[])
 		buf[i] = (char)i;
 	}
 	for (i = 0; i < dimGrid.x * dimGrid.y; i++) {
-		err = cudaMalloc(&chunks[i], chunksize);
-		if (err != cudaSuccess) {
-			printf("cudaMalloc failed: err: %s\n", cudaGetErrorString(err));
+		chunks[i] = (unsigned char *)mtbs_cudaMalloc(chunksize);
+		if (chunks[i] == NULL) {
+			printf("cudaMalloc failed\n");
 		}
-		cudaMemcpy(chunks[i], buf, chunksize, cudaMemcpyHostToDevice);
+		cuMemcpyHtoD((CUdeviceptr)chunks[i], buf, chunksize);
 	}
 	free(buf);
 
-	cudaMalloc(&d_chunks, dimGrid.x * dimGrid.y * sizeof(unsigned char *));
-	cudaMemcpy(d_chunks, chunks, dimGrid.x * dimGrid.y * sizeof(unsigned char *), cudaMemcpyHostToDevice);
+	d_chunks = (unsigned char **)mtbs_cudaMalloc(dimGrid.x * dimGrid.y * sizeof(unsigned char *));
+	cuMemcpyHtoD((CUdeviceptr)d_chunks, chunks, dimGrid.x * dimGrid.y * sizeof(unsigned char *));
 
 	args[3] = d_chunks;
 	return 0;

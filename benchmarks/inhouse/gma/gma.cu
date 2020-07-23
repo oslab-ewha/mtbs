@@ -2,6 +2,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <cuda.h>
+
 #include "../../benchapi.h"
 
 __device__ int
@@ -31,18 +33,17 @@ cookarg_gma(dim3 dimGrid, dim3 dimBlock, void *args[])
 	int	gmemsize = (int)(long long)args[0];
 	char	buf[1024];
 	int	i;
-	cudaError_t	err;
 
-	err = cudaMalloc((void **)&gmem, gmemsize * 1024);
-	if (err != cudaSuccess) {
-		printf("cudaMalloc failed: err: %s\n", cudaGetErrorString(err));
+	gmem = (unsigned char *)mtbs_cudaMalloc(gmemsize * 1024);
+	if (gmem == NULL) {
+		printf("cudaMalloc failed\n");
 		return -1;
 	}
 	for (i = 0; i < 1024; i++) {
 		buf[i] = i;
 	}
 	for (i = 0; i < gmemsize; i++) {
-		cudaMemcpy(gmem + i * 1024, buf, 1024, cudaMemcpyHostToDevice);
+		cuMemcpyHtoD((CUdeviceptr)gmem + i * 1024, buf, 1024);
 	}
 	args[2] = gmem;
 	return 0;

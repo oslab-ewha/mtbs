@@ -54,7 +54,7 @@ typedef struct {
 
 static unsigned		id_sm_last = 1;
 
-static cudaStream_t	strm_sched;
+static CUstream		strm_sched;
 
 static unsigned short	*g_mATs;
 static unsigned	char	*g_mtb_epochs;
@@ -71,6 +71,7 @@ extern BOOL run_sd_tbs(unsigned *pticks);
 
 extern void assign_fedkern_brun(fedkern_info_t *fkinfo,  benchrun_t *brun, unsigned char skrid);
 
+extern BOOL init_cuda(void);
 extern void init_mem(void);
 extern void init_skrun(void);
 extern void fini_skrun(void);
@@ -190,8 +191,8 @@ assign_tb_by_rr(sched_ctx_t *pctx, unsigned n_mtbs)
 static void
 reload_epochs(void)
 {
-	cudaMemcpyAsync(mtb_epochs_host, g_mtb_epochs, n_max_mtbs, cudaMemcpyDeviceToHost, strm_sched);
-	cudaStreamSynchronize(strm_sched);
+	cuMemcpyDtoHAsync(mtb_epochs_host, (CUdeviceptr)g_mtb_epochs, n_max_mtbs, strm_sched);
+	cuStreamSynchronize(strm_sched);
 }
 
 static void
@@ -231,7 +232,7 @@ schedule_mtbs(skrid_t skrid, unsigned n_tbs, unsigned n_mtbs_per_tb)
 }
 
 static void
-update_mAT(cudaStream_t strm)
+update_mAT(CUstream strm)
 {
 	unsigned	len;
 
@@ -240,8 +241,8 @@ update_mAT(cudaStream_t strm)
 
 	len = mAT_uprange_end - mAT_uprange_start;
 
-	cudaMemcpyAsync(g_mATs + mAT_uprange_start, mATs_host + mAT_uprange_start, len * sizeof(unsigned short), cudaMemcpyHostToDevice, strm);
-	cudaStreamSynchronize(strm);
+	cuMemcpyHtoDAsync((CUdeviceptr)(g_mATs + mAT_uprange_start), mATs_host + mAT_uprange_start, len * sizeof(unsigned short), strm);
+	cuStreamSynchronize(strm);
 	mAT_uprange_start = 0;
 	mAT_uprange_end = 0;
 }
@@ -249,11 +250,11 @@ update_mAT(cudaStream_t strm)
 static void *
 host_schedfunc(void *arg)
 {
-	cudaStream_t	strm;
+	CUstream	strm;
 
 	cuCtxSetCurrent(context);
 
-	cudaStreamCreate(&strm);
+	cuStreamCreate(&strm, CU_STREAM_NON_BLOCKING);
 
 	while (!host_scheduler_done) {
 		pthread_mutex_lock(&mutex);
@@ -262,12 +263,12 @@ host_schedfunc(void *arg)
 		usleep(10);
 	}
 
-	cudaStreamDestroy(strm);
+	cuStreamDestroy(strm);
 	return NULL;
 }
 
-__global__ void
-kernel_init_sched(int n_max_mtbs, unsigned short *g_mATs, unsigned char *g_mtb_epochs)
+extern "C" __global__ void
+func_init_sched(int n_max_mtbs, unsigned short *g_mATs, unsigned char *g_mtb_epochs)
 {
 	extern __device__ unsigned short	*mATs;
 	extern __device__ unsigned char		*mtb_epochs;
@@ -287,6 +288,9 @@ kernel_init_sched(int n_max_mtbs, unsigned short *g_mATs, unsigned char *g_mtb_e
 void
 init_sched(void)
 {
+	CUfunction	func_init_sched;
+	void		*params[3];
+	CUresult	err;
 	int	i;
 
 	n_max_mtbs_per_sm = n_threads_per_MTB / N_THREADS_PER_mTB * n_MTBs_per_sm;
@@ -295,10 +299,19 @@ init_sched(void)
 	g_mATs = (unsigned short *)mtbs_cudaMalloc(EPOCH_MAX * n_max_mtbs * sizeof(unsigned short));
 	g_mtb_epochs = (unsigned char *)mtbs_cudaMalloc(n_max_mtbs);
 
-	dim3 dimGrid(1,1), dimBlock(1,1);
-	kernel_init_sched<<<dimGrid, dimBlock>>>(n_max_mtbs, g_mATs, g_mtb_epochs);
+	cuStreamCreate(&strm_sched, CU_STREAM_NON_BLOCKING);
 
-	cudaStreamCreate(&strm_sched);
+	cuModuleGetFunction(&func_init_sched, mod, "func_init_sched");
+	params[0] = &n_max_mtbs;
+	params[1] = &g_mATs;
+	params[2] = &g_mtb_epochs;
+
+	err = cuLaunchKernel(func_init_sched, 1, 1, 1, 1, 1, 1, 0, strm_sched, params, NULL);
+	if (err != CUDA_SUCCESS) {
+		error("failed to initialize sched: %s\n", get_cuda_error_msg(err));
+		exit(12);
+	}
+	cuStreamSynchronize(strm_sched);
 
 	mATs_host = (unsigned short *)malloc(EPOCH_MAX * n_max_mtbs * sizeof(unsigned short));
 	for (i = 0; i < n_max_mtbs * EPOCH_MAX; i++) {
@@ -331,6 +344,9 @@ extern "C" BOOL
 run_tbs(unsigned *pticks)
 {
 	BOOL	res;
+
+	if (!init_cuda())
+		return FALSE;
 
 	init_mem();
 	init_skrun();

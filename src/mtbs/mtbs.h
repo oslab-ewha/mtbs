@@ -31,8 +31,6 @@ BOOL add_bench(unsigned runcount, const char *code, const char *args);
 
 void report(unsigned elapsed);
 
-BOOL select_gpu_device(unsigned devno);
-
 BOOL run_tbs(unsigned *pticks);
 
 void setup_sched(const char *strpol);

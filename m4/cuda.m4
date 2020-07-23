@@ -48,20 +48,20 @@ fi
 if test -n "$cuda_microarch"; then
 	case $cuda_microarch in
 		fermi)
-		NVCC_ARCHITECTURE="--gpu-architecture compute_20"
+		NVCC_ARCHITECTURE="--gpu-architecture sm_20"
 		NVCC_ARCHITECTURE=""
 		AC_DEFINE([CUDA_COMPUTE], [20], [GPU micro architecture])
 		;;
 		maxwell)
-		NVCC_ARCHITECTURE="--gpu-architecture compute_53"
+		NVCC_ARCHITECTURE="--gpu-architecture sm_53"
 		AC_DEFINE([CUDA_COMPUTE], [53], [GPU micro architecture])
 		;;
 		pascal)
-		NVCC_ARCHITECTURE="--gpu-architecture compute_61"
+		NVCC_ARCHITECTURE="--gpu-architecture sm_61"
 		AC_DEFINE([CUDA_COMPUTE], [61], [GPU micro architecture])
 		;;
 		volta)
-		NVCC_ARCHITECTURE="--gpu-architecture compute_70"
+		NVCC_ARCHITECTURE="--gpu-architecture sm_70"
 		AC_DEFINE([CUDA_COMPUTE], [70])
 		;;
 		*)

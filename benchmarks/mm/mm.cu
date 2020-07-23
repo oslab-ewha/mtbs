@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <cuda.h>
+
 #include "../benchapi.h"
 
 __device__ int
@@ -80,15 +82,15 @@ bench_mm(dim3 dimGrid, dim3 dimBlock, void *args[])
 
 	strm = create_vstream();
 
-	cudaMemcpyAsync(d_mat, matA, sizeof(int) * m * n, cudaMemcpyHostToDevice, *(cudaStream_t *)strm);
-	cudaMemcpyAsync(d_mat + m * n, matB, sizeof(int) * n * k, cudaMemcpyHostToDevice, *(cudaStream_t *)strm);
-	cudaStreamSynchronize(*(cudaStream_t *)strm);
+	cuMemcpyHtoDAsync((CUdeviceptr)d_mat, matA, sizeof(int) * m * n, *(CUstream *)strm);
+	cuMemcpyHtoDAsync((CUdeviceptr)(d_mat + m * n), matB, sizeof(int) * n * k, *(CUstream *)strm);
+	cuStreamSynchronize(*(CUstream *)strm);
 
 	sk = launch_kernel(MM, strm, dimGrid, dimBlock, args);
 	wait_kernel(sk, strm, &res);
 
-	cudaMemcpyAsync(matC, d_mat + (m * n + n * k), sizeof(int) * (m * k), cudaMemcpyDeviceToHost, *(cudaStream_t *)strm);
-	cudaStreamSynchronize(*(cudaStream_t *)strm);
+	cuMemcpyDtoHAsync(matC, (CUdeviceptr)(d_mat + (m * n + n * k)), sizeof(int) * (m * k), *(CUstream *)strm);
+	cuStreamSynchronize(*(CUstream *)strm);
 
 	destroy_vstream(strm);
 

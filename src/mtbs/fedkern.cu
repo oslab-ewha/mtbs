@@ -18,7 +18,7 @@ create_fedkern_info(void)
 	fkinfo->sched_done = FALSE;
 
 	g_fkinfo = (fedkern_info_t *)mtbs_cudaMalloc(sizeof(fedkern_info_t));
-	cudaMemcpy(g_fkinfo, fkinfo, sizeof(fedkern_info_t), cudaMemcpyHostToDevice);
+	cuMemcpyHtoD((CUdeviceptr)g_fkinfo, fkinfo, sizeof(fedkern_info_t));
 
 	return g_fkinfo;
 }
@@ -32,17 +32,17 @@ free_fedkern_info(fedkern_info_t *g_fkinfo)
 void
 wait_fedkern_initialized(fedkern_info_t *d_fkinfo)
 {
-	cudaStream_t	strm;
+	CUstream	strm;
 
-	cudaStreamCreate(&strm);
+	cuStreamCreate(&strm, CU_STREAM_NON_BLOCKING);
 
 	while (TRUE) {
 		BOOL	initialized = FALSE;
 
-		cudaMemcpyAsync(&initialized, &d_fkinfo->initialized, sizeof(BOOL), cudaMemcpyDeviceToHost, strm);
-		cudaStreamSynchronize(strm);
+		cuMemcpyDtoHAsync(&initialized, (CUdeviceptr)&d_fkinfo->initialized, sizeof(BOOL), strm);
+		cuStreamSynchronize(strm);
 		if (initialized)
 			break;
 	}
-	cudaStreamDestroy(strm);
+	cuStreamDestroy(strm);
 }

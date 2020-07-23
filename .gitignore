@@ -11,3 +11,4 @@
 Makefile
 cscope.out
 cscope.files
+/src/mtbs/mtbs.cubin

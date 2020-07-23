@@ -530,9 +530,9 @@ init_mem(void)
 		INIT_LIST_HEAD(&free_head[i]);
 
 	while (cur_memsize < max_memsize) {
-		void	*ptr;
+		CUdeviceptr	ptr;
 		unsigned	size = max_memsize - cur_memsize;
-		cudaError_t	err;
+		CUresult	res;
 
 		if (size > memchunk)
 			size = memchunk;
@@ -542,8 +542,8 @@ init_mem(void)
 				break;
 			size = MIN_UNIT << idx;
 		}
-		err = cudaMalloc(&ptr, size);
-		if (err != cudaSuccess) {
+		res = cuMemAlloc(&ptr, size);
+		if (res != CUDA_SUCCESS) {
 			if (memchunk > MIN_UNIT && cur_memsize == 0) {
 				memchunk /= 2;
 				continue;
@@ -551,7 +551,7 @@ init_mem(void)
 			break;
 		}
 
-		add_mem(ptr, size);
+		add_mem((void *)ptr, size);
 		cur_memsize += size;
 	}
 
@@ -585,7 +585,7 @@ fini_mem(void)
 				error("weird head mem exists");
 				exit(1);
 			}
-			cudaFree(mem->ptr);
+			cuMemFree((CUdeviceptr)mem->ptr);
 			destroy_mem(mem);
 		}
 	}

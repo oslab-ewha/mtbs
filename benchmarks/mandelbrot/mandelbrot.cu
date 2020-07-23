@@ -1,6 +1,8 @@
 // Note: Most of the code comes from the MacResearch OpenCL podcast
 #include <stdio.h>
 
+#include <cuda.h>
+
 #include "../benchapi.h"
 
 __device__ int
@@ -86,8 +88,8 @@ bench_mandelbrot(dim3 dimGrid, dim3 dimBlock, void *args[])
 	sk = launch_kernel(MANDELBROT, strm, dimGrid, dimBlock, args);
 	wait_kernel(sk, strm, &res);
 
-	cudaMemcpyAsync(host_image, image, buffer_size, cudaMemcpyDeviceToHost, *(cudaStream_t *)strm);
-	cudaStreamSynchronize(*(cudaStream_t *)strm);
+	cuMemcpyDtoHAsync(host_image, (CUdeviceptr)image, buffer_size, *(CUstream *)strm);
+	cuStreamSynchronize(*(CUstream *)strm);
 
 	destroy_vstream(strm);
 

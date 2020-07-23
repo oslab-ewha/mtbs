@@ -21,6 +21,7 @@ extern int	n_mtbs_submitted;
 extern unsigned		n_queued_kernels;
 
 extern CUcontext	context;
+extern CUmodule		mod;
 
 typedef unsigned short	skrid_t;
 
@@ -94,8 +95,6 @@ __device__ void run_sub_kernel(skrun_t *skr);
 fedkern_info_t *create_fedkern_info(void);
 void free_fedkern_info(fedkern_info_t *fkinfo);
 
-BOOL setup_gpu_devinfo(void);
-
 unsigned get_n_mTBs_for_threads(unsigned n_threads);
 BOOL is_sm_avail(int id_sm, unsigned n_mTBs);
 unsigned get_sm_n_sched_mTBs(int id_sm);
@@ -103,5 +102,7 @@ void use_next_mAT(int id_sm);
 
 void init_tickcount(void);
 unsigned get_tickcount(void);
+
+const char *get_cuda_error_msg(CUresult err);
 
 #endif

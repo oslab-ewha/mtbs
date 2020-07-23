@@ -12,8 +12,8 @@ extern __device__ void advance_epoch_dyn(skrid_t skrid);
 
 __device__ BOOL	going_to_shutdown;
 
-static __global__ void
-kernel_macro_TB(fedkern_info_t *fkinfo)
+extern "C" __global__ void
+func_macro_TB(fedkern_info_t *fkinfo)
 {
 	if (threadIdx.x == 0 && threadIdx.y == 0) {
 		try_setup_dyn_sched(fkinfo);
@@ -38,44 +38,38 @@ kernel_macro_TB(fedkern_info_t *fkinfo)
 static BOOL
 launch_macro_TB(fedkern_info_t *fkinfo)
 {
-	cudaStream_t	strm;
-	cudaError_t	err;
-	dim3	dimGrid(n_sm_count, n_MTBs_per_sm);
-	dim3	dimBlock(n_threads_per_MTB, 1);
+	CUstream	strm;
+	CUresult	err;
+	CUfunction	func_macro_TB;
+	void	*params[1];
 
-	cudaStreamCreate(&strm);
-	kernel_macro_TB<<<dimGrid, dimBlock, 0, strm>>>(fkinfo);
-	err = cudaGetLastError();
-	if (err != cudaSuccess) {
-		error("kernel launch error: %s\n", cudaGetErrorString(err));
+	cuStreamCreate(&strm, CU_STREAM_NON_BLOCKING);
+	cuModuleGetFunction(&func_macro_TB, mod, "func_macro_TB");
+
+	params[0] = &fkinfo;
+	err = cuLaunchKernel(func_macro_TB, n_sm_count, n_MTBs_per_sm, 1,
+			     n_threads_per_MTB, 1, 1, 0, strm, params, NULL);
+	if (err != CUDA_SUCCESS) {
+		error("kernel launch error: %s\n", get_cuda_error_msg(err));
 		return FALSE;
 	}
 
 	wait_fedkern_initialized(fkinfo);
-
 	return TRUE;
 }
 
 static void
 stop_macro_TB(fedkern_info_t *fkinfo)
 {
-	cudaStream_t	strm;
 	BOOL	done = TRUE;
 
-	cudaStreamCreate(&strm);
-	cudaMemcpyAsync(&fkinfo->sched_done, &done, sizeof(BOOL), cudaMemcpyHostToDevice, strm);
-	cudaStreamSynchronize(strm);
+	cuMemcpyHtoD((CUdeviceptr)&fkinfo->sched_done, &done, sizeof(BOOL));
 }
 
 BOOL
 run_sd_tbs(unsigned *pticks)
 {
 	fedkern_info_t	*fkinfo;
-
-	if (!setup_gpu_devinfo()) {
-		error("no gpu found");
-		return FALSE;
-	}
 
 	init_sched();
 

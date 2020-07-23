@@ -1,8 +1,10 @@
 #ifndef _STREAM_H_
 #define _STREAM_H_
 
+#include <cuda.h>
+
 typedef struct {
-	cudaStream_t	cudaStrm;
+	CUstream	cudaStrm;
 	unsigned	refcnt;
 } vStrm_t, *vstrm_t;
 
