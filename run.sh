@@ -4,7 +4,7 @@ function usage() {
     cat <<EOF
 Usage: run.sh [options] <benchmark code:bench args only>...
  -c <# of tests>, default: 1
- -s <schedules>: hw,sd
+ -s <schedules>: hw,dynamic,static
  -n <tbs per SM>, default: 1,2,3,4
  -S <# of SM>, default: 1
  -m <start>,<end>: multirun mode
@@ -20,7 +20,7 @@ MTBS_ARGS=${MTBS_ARGS}
 
 n_tests=1
 n_sms=1
-schedules="hw,dynamic"
+schedules="hw,dynamic,static"
 n_tbs_per_sm="1,2,3,4,5,6,7,8"
 n_ths_per_tb="32,64,128,256,512,1024"
 multirun_range=
