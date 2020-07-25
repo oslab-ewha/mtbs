@@ -99,5 +99,4 @@ init_benchruns(void)
 			exit(10);
 		}
 	}
-	usleep(1000000);
 }
