@@ -30,10 +30,15 @@ static pthread_t	checker;
 static pthread_mutex_t	mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t	cond = PTHREAD_COND_INITIALIZER;
 
-static CUstream	strm_submit;
+CUstream	strm_submit;
 
 #define SK_PROTO(name)	__device__ int name(void *args[])
 #define SK_FUNCS(base)	SK_PROTO(base);
+
+extern void init_skrun_pagoda(void);
+extern void fini_skrun_pagoda(void);
+extern sk_t submit_skrun_pagoda(skrun_t *skr);
+extern void wait_skrun_pagoda(sk_t sk, int *pres);
 
 SK_FUNCS(loopcalc)
 SK_FUNCS(mklc)
@@ -155,54 +160,70 @@ launch_kernel(skid_t skid, vstream_t stream, dim3 dimGrid, dim3 dimBlock, void *
 	skrun.n_tbs = dimGrid.x * dimGrid.y;
 	skrun.n_mtbs_per_tb = dimBlock.x * dimBlock.y / N_THREADS_PER_mTB;
 
-	if (sched->type != TBS_TYPE_HW) {
+	switch (sched->type) {
+	case TBS_TYPE_SD_DYNAMIC:
+	case TBS_TYPE_SD_STATIC:
 		sk = submit_skrun(&skrun);
-	}
-	else {
+		break;
+	case TBS_TYPE_SD_PAGODA:
+		sk = submit_skrun_pagoda(&skrun);
+		break;
+	default:
 		sk = submit_skrun_hw(stream, &skrun);
+		break;
 	}
 	return sk;
 }
 
 static void
-wait_skrun(skrid_t skrid)
+wait_skrun(sk_t sk, int *pres)
 {
+	skrun_t	*skr;
+
+	skrid_t	skrid = (skrid_t)(long long)sk;
+
 	pthread_mutex_lock(&mutex);
 
 	while (!checker_done && !skrun_dones[skrid - 1])
 		pthread_cond_wait(&cond, &mutex);
 
 	pthread_mutex_unlock(&mutex);
+
+	skr = g_skruns + (skrid - 1);
+	cuMemcpyDtoHAsync(pres, (CUdeviceptr)&skr->res, sizeof(int), strm_submit);
+	cuStreamSynchronize(strm_submit);
+}
+
+static void
+wait_skrun_hw(sk_t sk, vstream_t stream, int *pres)
+{
+	CUstream	cstrm;
+	skrun_t	*d_skr = (skrun_t *)sk;
+
+	cstrm = ((vstrm_t)stream)->cudaStrm;
+
+	cuStreamSynchronize(cstrm);
+	cuMemcpyDtoHAsync(pres, (CUdeviceptr)&d_skr->res, sizeof(int), cstrm);
+	cuStreamSynchronize(cstrm);
+
+	mtbs_cudaFree(d_skr);
 }
 
 void
 wait_kernel(sk_t sk, vstream_t stream, int *pres)
 {
-	int	res;
-
-	if (sched->type != TBS_TYPE_HW) {
-		skrun_t	*skr;
-
-		skrid_t	skrid = (skrid_t)(long long)sk;
-		wait_skrun(skrid);
-		skr = g_skruns + (skrid - 1);
-		cuMemcpyDtoHAsync(&res, (CUdeviceptr)&skr->res, sizeof(int), strm_submit);
-		cuStreamSynchronize(strm_submit);
+	switch (sched->type) {
+	case TBS_TYPE_SD_DYNAMIC:
+	case TBS_TYPE_SD_STATIC:
+		wait_skrun(sk, pres);
+		break;
+	case TBS_TYPE_SD_PAGODA:
+		wait_skrun_pagoda(sk, pres);
+		break;
+	default:
+		wait_skrun_hw(sk, stream, pres);
+		break;
 	}
-	else {
-		CUstream	cstrm;
-		skrun_t	*d_skr = (skrun_t *)sk;
-
-		cstrm = ((vstrm_t)stream)->cudaStrm;
-
-		cuStreamSynchronize(cstrm);
-		cuMemcpyDtoHAsync(&res, (CUdeviceptr)&d_skr->res, sizeof(int), cstrm);
-		cuStreamSynchronize(cstrm);
-
-		mtbs_cudaFree(d_skr);
-	}
-
-	*pres = res;
 }
 
 static void
@@ -281,7 +302,7 @@ init_skrun(void)
 	info_n_mtbs = (unsigned *)calloc(n_queued_kernels, sizeof(unsigned));
 	skrun_dones = (BOOL *)calloc(n_queued_kernels, sizeof(BOOL));
 
-	if (sched->type != TBS_TYPE_HW)
+	if (sched->type != TBS_TYPE_HW && sched->type != TBS_TYPE_SD_PAGODA)
 		pthread_create(&checker, NULL, skruns_checkfunc, NULL);
 
 	cuModuleGetFunction(&func_init_skrun, mod, "func_init_skrun");
@@ -300,6 +321,8 @@ init_skrun(void)
 	if (res != CUDA_SUCCESS) {
 		error("failed to get sub_kernel_func: %s\n", get_cuda_error_msg(res));
 	}
+	if (sched->type == TBS_TYPE_SD_PAGODA)
+		init_skrun_pagoda();
 }
 
 void
@@ -307,9 +330,16 @@ fini_skrun(void)
 {
 	void	*retval;
 
-	if (sched->type != TBS_TYPE_HW) {
+	switch (sched->type) {
+	case TBS_TYPE_SD_DYNAMIC:
+	case TBS_TYPE_SD_STATIC:
 		checker_done = TRUE;
 		pthread_join(checker, &retval);
+	case TBS_TYPE_SD_PAGODA:
+		fini_skrun_pagoda();
+		break;
+	default:
+		break;
 	}
 
 	mtbs_cudaFree(g_skruns);

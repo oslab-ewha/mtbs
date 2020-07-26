@@ -5,21 +5,52 @@ extern void fini_sched(void);
 
 extern void wait_fedkern_initialized(fedkern_info_t *d_fkinfo);
 
-extern __device__ void try_setup_dyn_sched(fedkern_info_t *fkinfo);
+extern __device__ void setup_sched_dyn(fedkern_info_t *fkinfo);
 
 extern __device__ skrid_t get_skrid_dyn(void);
 extern __device__ void advance_epoch_dyn(skrid_t skrid);
 
+extern __device__ void setup_sched_pagoda(fedkern_info_t *fkinfo);
+extern __device__ void pagoda_master_kernel(void);
+
 __device__ BOOL	going_to_shutdown;
+__device__ fedkern_info_t	*d_fkinfo;
+
+static __device__ void
+initialize_scheduler(fedkern_info_t *fkinfo)
+{
+	if (blockIdx.x != 0 || blockIdx.y != 0) {
+		while (TRUE) {
+			if (*(volatile BOOL *)&fkinfo->initialized)
+				return;
+			sleep_in_kernel();
+		}
+	}
+
+	d_fkinfo = fkinfo;
+	switch (fkinfo->sched_id) {
+	case TBS_TYPE_SD_PAGODA:
+		setup_sched_pagoda(fkinfo);
+		break;
+	default:
+		setup_sched_dyn(fkinfo);
+		break;
+	}
+	d_fkinfo->initialized = TRUE;
+}
 
 extern "C" __global__ void
 func_macro_TB(fedkern_info_t *fkinfo)
 {
 	if (threadIdx.x == 0 && threadIdx.y == 0) {
-		try_setup_dyn_sched(fkinfo);
+		initialize_scheduler(fkinfo);
 	}
 	__syncthreads();
 
+	if (fkinfo->sched_id == TBS_TYPE_SD_PAGODA) {
+		pagoda_master_kernel();
+		return;
+	}
 	while (!going_to_shutdown) {
 		skrid_t	skrid;
 		skrun_t	*skr;
@@ -54,7 +85,8 @@ launch_macro_TB(fedkern_info_t *fkinfo)
 		return FALSE;
 	}
 
-	wait_fedkern_initialized(fkinfo);
+	if (sched->type != TBS_TYPE_SD_PAGODA)
+		wait_fedkern_initialized(fkinfo);
 	return TRUE;
 }
 

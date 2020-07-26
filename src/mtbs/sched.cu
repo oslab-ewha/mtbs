@@ -24,8 +24,13 @@ static sched_t	sched_sd_static = {
 	TBS_TYPE_SD_STATIC,
 };
 
+static sched_t	sched_sd_pagoda = {
+	"pagoda",
+	TBS_TYPE_SD_PAGODA,
+};
+
 static sched_t	*all_sched[] = {
-	&sched_hw, &sched_sd_dynamic, &sched_sd_static, NULL
+	&sched_hw, &sched_sd_dynamic, &sched_sd_static, &sched_sd_pagoda, NULL
 };
 
 sched_t	*sched = &sched_hw;

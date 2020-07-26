@@ -18,12 +18,29 @@ get_smid(void)
 	return ret;
 }
 
+__device__ uint
+get_laneid(void)
+{
+	uint	ret;
+        asm volatile("mov.u32 %0, %laneid;" : "=r"(ret));
+	return ret;
+}
+
 __device__ void
 sleep_in_kernel(void)
 {
 #if CUDA_COMPUTE >= 70
 	asm("nanosleep.u32 1;");
 #endif
+}
+
+unsigned long long
+get_ticks(void)
+{
+	struct timespec	ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
 
 extern "C" void

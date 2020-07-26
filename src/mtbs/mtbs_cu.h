@@ -40,6 +40,7 @@ typedef enum {
 	TBS_TYPE_HW = 1,
 	TBS_TYPE_SD_DYNAMIC,
 	TBS_TYPE_SD_STATIC,
+	TBS_TYPE_SD_PAGODA,
 } tbs_type_t;
 
 typedef struct {
@@ -73,6 +74,7 @@ typedef struct {
 	tbs_type_t	type;
 } sched_t;
 
+__device__ extern BOOL	going_to_shutdown;
 __device__ extern tbs_type_t	d_tbs_type;
 __device__ extern unsigned	dn_queued_kernels;
 __device__ extern skrun_t	*d_skruns;
@@ -86,9 +88,12 @@ extern void start_benchruns(void);
 extern void wait_benchruns(void);
 
 __device__ uint get_smid(void);
+__device__ uint get_laneid(void);
 __device__ void sleep_in_kernel(void);
 __device__ unsigned find_mtb_start(unsigned id_sm, unsigned idx_mtb_start, unsigned n_mtbs);
 __device__ unsigned get_n_active_mtbs(unsigned id_sm);
+
+unsigned long long get_ticks(void);
 
 __device__ void run_sub_kernel(skrun_t *skr);
 

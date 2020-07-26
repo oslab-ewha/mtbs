@@ -106,7 +106,8 @@ am_mtbs_OBJECTS = mtbs.$(OBJEXT) tbs_sd.$(OBJEXT) tbs_native.$(OBJEXT) \
 	benchapi.$(OBJEXT) sched.$(OBJEXT) sched_dyn.$(OBJEXT) \
 	sched_dyn_rr.$(OBJEXT) sched_dyn_rrf.$(OBJEXT) \
 	sched_dyn_fca.$(OBJEXT) sched_dyn_rrm.$(OBJEXT) \
-	stream.$(OBJEXT) mem.$(OBJEXT) cudainit.$(OBJEXT)
+	pagoda.$(OBJEXT) stream.$(OBJEXT) mem.$(OBJEXT) \
+	cudainit.$(OBJEXT)
 mtbs_OBJECTS = $(am_mtbs_OBJECTS)
 mtbs_DEPENDENCIES = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
 	../../benchmarks/inhouse/mklc/libmklc.a \
@@ -277,6 +278,7 @@ LINK = @NVCC_PATH@ @NVCC_ARCHITECTURE@ -o $@
 mtbs_SOURCES = mtbs.c tbs_sd.cu tbs_native.cu benchmgr.cu benchrun.cu skrun.cu \
 	fedkern.cu report.cu misc.cu mtbs.h mtbs_cu.h benchapi.cu sched.cu \
 	sched_dyn.cu sched_dyn.h sched_dyn_rr.cu sched_dyn_rrf.cu sched_dyn_fca.cu sched_dyn_rrm.cu \
+	pagoda.cu pagoda.h pagoda.cuh \
 	stream.cu stream.h mem.cu cudainit.cu
 
 mtbs_LDADD = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
@@ -600,6 +602,8 @@ uninstall-am: uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
 
+
+pagoda.o: pagoda.cuh
 .cu.o:
 	@NVCC_PATH@ -dc $(AM_CPPFLAGS) --maxrregcount 32 @NVCC_CPPFLAGS@ @NVCC_ARCHITECTURE@ $< -o $@
 

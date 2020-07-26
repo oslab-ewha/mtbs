@@ -1,8 +1,9 @@
 #include "mtbs_cu.h"
 
 extern __device__ skrun_t *get_skr_dyn(void);
+extern __device__ skrun_t *get_skr_pagoda(void);
 extern __device__ unsigned short get_offset_TB_dyn(void);
-extern __device__ unsigned short get_offset_TB_prl(void);
+extern __device__ unsigned short get_offset_TB_pagoda(void);
 extern __device__ void sync_TB_threads_dyn(void);
 
 /* TODO: benchmark API is not ready for a static scheduler */
@@ -24,6 +25,9 @@ get_gridDimX(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return gridDim.x;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		break;
@@ -40,6 +44,9 @@ get_gridDimY(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return gridDim.y;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		break;
@@ -57,9 +64,14 @@ get_blockIdxX(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return blockIdx.x;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		offset = get_offset_TB_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		offset = get_offset_TB_dyn();
+		break;
 	}
 	return ((offset * N_THREADS_PER_mTB) / (skr->dimBlock.x * skr->dimBlock.y)) % skr->dimGrid.x;
 }
@@ -73,6 +85,10 @@ get_blockIdxY(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return blockIdx.y;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		offset = get_offset_TB_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		offset = get_offset_TB_dyn();
@@ -89,6 +105,9 @@ get_blockDimX(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return blockDim.x;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		break;
@@ -105,6 +124,9 @@ get_blockDimY(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return blockDim.y;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		break;
@@ -122,6 +144,10 @@ get_threadIdxX(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return threadIdx.x;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		offset = get_offset_TB_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		offset = get_offset_TB_dyn();
@@ -139,6 +165,10 @@ get_threadIdxY(void)
         switch (d_tbs_type) {
 	case TBS_TYPE_HW:
 		return threadIdx.y;
+	case TBS_TYPE_SD_PAGODA:
+		skr = get_skr_pagoda();
+		offset = get_offset_TB_pagoda();
+		break;
 	default:
 		skr = get_skr_dyn();
 		offset = get_offset_TB_dyn();

@@ -1,6 +1,7 @@
 #include "../../config.h"
 
 #include "mtbs_cu.h"
+#include "tbs_sd.h"
 #include "sched_cu.h"
 
 #define mTB_ALLOC_TABLE_EPOCH(epch)	(mATs + mTB_TOTAL_COUNT() * (epch))
@@ -29,10 +30,7 @@
 #define mTB_SYNC_EPOCH(id_sm, idx, epch)	mTB_SYNC_TABLE_EPOCH(epch)[mTB_INDEX(id_sm, idx) - 1]
 #define mTB_SYNC(id_sm, idx)	mTB_SYNC_TABLE(id_sm, idx)[mTB_INDEX(id_sm, idx) - 1]
 
-extern __device__ BOOL	going_to_shutdown;
-
 __device__ static volatile int	in_scheduling;
-__device__ static fedkern_info_t	*d_fkinfo;
 
 /* epoch directory for mTB allocation table */
 __device__ volatile unsigned short	*mATs;
@@ -271,13 +269,13 @@ sync_TB_threads_dyn(void)
 	SYNCWARP();
 }
 
-static __device__ void
-setup_dyn_sched(fedkern_info_t *_fkinfo)
+__device__ void
+setup_sched_dyn(fedkern_info_t *fkinfo)
 {
 	int	size;
 	int	i;
 
-	d_fkinfo = _fkinfo;
+	d_fkinfo = fkinfo;
 
 	size = EPOCH_MAX * mTB_TOTAL_COUNT();
 
@@ -297,18 +295,4 @@ setup_dyn_sched(fedkern_info_t *_fkinfo)
 	for (i = 0; i < dn_queued_kernels; i++) {
 		skr_n_tbs_sched[i] = 0;
 	}
-}
-
-__device__ void
-try_setup_dyn_sched(fedkern_info_t *_fkinfo)
-{
-	if (blockIdx.x != 0 || blockIdx.y != 0) {
-		while (TRUE) {
-			if (*(volatile BOOL *)&_fkinfo->initialized)
-				return;
-			sleep_in_kernel();
-		}
-	}
-	setup_dyn_sched(_fkinfo);
-	d_fkinfo->initialized = TRUE;
 }
