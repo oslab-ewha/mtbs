@@ -19,7 +19,9 @@ static tentry_t	*g_taskentries;
 static unsigned	numEntriesPerPool;
 
 static __device__ tentry_t	*d_taskentries;
+static __device__ int		*d_readytable;
 static __device__ unsigned	d_numEntriesPerPool;
+static int	*ready_table;
 
 extern CUstream	strm_submit;
 
@@ -206,6 +208,7 @@ again:
 	offset = tentry - taskentries;
 	cuMemcpyHtoDAsync((CUdeviceptr)(g_taskentries + offset), tentry, sizeof(tentry_t), strm_submit);
 	cuStreamSynchronize(strm_submit);
+	ready_table[offset] = -1;
 
 	push_prev_taskid(offset + 2);
 
@@ -224,10 +227,7 @@ wait_skrun_pagoda(sk_t sk, int *pres)
 	offset = tentry - taskentries;
 	d_tentry = g_taskentries + offset;
 	while (TRUE) {
-		unsigned	ready;
-		cuMemcpyDtoHAsync(&ready, (CUdeviceptr)&d_tentry->ready, sizeof(int), strm_submit);
-		cuStreamSynchronize(strm_submit);
-		if (ready == 0) {
+		if (ready_table[offset] == 0) {
 			tentry->ready = 0;
 			break;
 		}
@@ -239,12 +239,13 @@ wait_skrun_pagoda(sk_t sk, int *pres)
 }
 
 extern "C" __global__ void
-func_init_pagoda(tentry_t *taskentries, unsigned numEntriesPerPool, unsigned n_tasktables)
+func_init_pagoda(tentry_t *taskentries, int *ready_table, unsigned numEntriesPerPool, unsigned n_tasktables)
 {
 	unsigned	i;
 	unsigned	n_tentries = numEntriesPerPool * n_tasktables;
 
 	d_taskentries = taskentries;
+	d_readytable = ready_table;
 	d_numEntriesPerPool = numEntriesPerPool;
 
 	for (i = 0; i < n_tentries; i++) {
@@ -257,7 +258,7 @@ void
 init_skrun_pagoda(void)
 {
 	CUfunction	func_init_pagoda;
-	void		*params[3];
+	void		*params[4];
 	unsigned	n_tentries;
 	unsigned	i;
 
@@ -271,16 +272,19 @@ init_skrun_pagoda(void)
 	pthread_spin_init(&lock, 0);
 
 	g_taskentries = (tentry_t *)mtbs_cudaMalloc(sizeof(tentry_t) * n_tentries);
+	cuMemAllocHost((void **)&ready_table, sizeof(int) * n_tentries);
 
 	for (i = 0; i < n_tentries; i++) {
 		taskentries[i].ready = 0;
 		taskentries[i].sched = 0;
+		ready_table[i] = 0;
 	}
 
 	cuModuleGetFunction(&func_init_pagoda, mod, "func_init_pagoda");
 	params[0] = &g_taskentries;
-	params[1] = &numEntriesPerPool;
-	params[2] = &n_tasktables;
+	params[1] = &ready_table;
+	params[2] = &numEntriesPerPool;
+	params[3] = &n_tasktables;
 	cuLaunchKernel(func_init_pagoda, 1, 1, 1, 1, 1, 1, 0, strm_submit, params, NULL);
 	cuStreamSynchronize(strm_submit);
 }
@@ -288,5 +292,6 @@ init_skrun_pagoda(void)
 void
 fini_skrun_pagoda(void)
 {
+	cuMemFreeHost(ready_table);
 	mtbs_cudaFree(g_taskentries);
 }

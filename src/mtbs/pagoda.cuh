@@ -94,10 +94,12 @@ do_executer(unsigned tableid)
 		tentry = d_taskentries + wentry->taskid - 2;
 		run_sub_kernel(&tentry->skrun);
 		if (get_laneid() == 0) {
+			int	*ready_host = d_readytable + wentry->taskid - 2;
 			int	eNum = (wentry->taskid - 2) % d_numEntriesPerPool;
 			wentry->taskid = 0;
 			wentry->exec = 0;
 			if (atomicDec(doneCtr + eNum, MAX_ENTRIES_PER_POOL) == 1) {
+				*ready_host = 0;
 				tentry->ready = 0;
 			}
 		}
