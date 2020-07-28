@@ -17,6 +17,7 @@ usage(void)
 "  -S <# of pre-allocated streams>: # of streams, default: 128\n"
 "  -M <MTB count per sm>\n"
 "  -T <thread count per MTB>\n"
+"  -v: verbose\n"
 "  -h: help\n"
 "<run prefix>: NN*\n"
 "  following benchmark is submitted NN times\n"
@@ -51,6 +52,7 @@ unsigned	arg_n_MTBs_per_sm;
 unsigned	arg_n_threads_per_MTB;
 unsigned	n_submission_workers = 128;
 unsigned	n_streams = 128;
+unsigned	verbose = 0;
 
 static int
 parse_benchargs(int argc, char *argv[])
@@ -117,7 +119,7 @@ parse_options(int argc, char *argv[])
 {
 	int	c;
 
-	while ((c = getopt(argc, argv, "d:s:K:w:S:M:T:h")) != -1) {
+	while ((c = getopt(argc, argv, "d:s:K:w:S:M:T:vh")) != -1) {
 		switch (c) {
 		case 'd':
 			select_device(optarg);
@@ -139,6 +141,9 @@ parse_options(int argc, char *argv[])
 			break;
 		case 'T':
 			setup_n_threads(optarg);
+			break;
+		case 'v':
+			verbose++;
 			break;
 		case 'h':
 			usage();

@@ -1,10 +1,11 @@
 #include "mtbs_cu.h"
 
+extern unsigned	verbose;
+
 extern "C" void
 report(unsigned elapsed)
 {
 	benchrun_t	*brun;
-	int	i;
 
 	printf("tbs type: %s\n", sched->name);
 	if (sched->type != TBS_TYPE_HW) {
@@ -14,7 +15,10 @@ report(unsigned elapsed)
 	}
 	printf("elapsed time: %.6lf\n", elapsed / 1000000.0);
 	brun = benchruns;
-	for (i = 0; i < n_benches; i++, brun++) {
-		printf("%s: %d\n", brun->info->code, brun->res);
+	if (verbose > 1) {
+		int	i;
+		for (i = 0; i < n_benches; i++, brun++) {
+			printf("%s: %d\n", brun->info->code, brun->res);
+		}
 	}
 }
