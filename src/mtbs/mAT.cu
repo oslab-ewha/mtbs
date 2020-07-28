@@ -44,6 +44,7 @@ submit_skrun_mAT(skrun_t *skr)
 
 	skrid = cur_skrid_host + 1;
 	info_n_mtbs[skrid - 1] = skr->n_tbs * skr->n_mtbs_per_tb;
+	skrun_dones[skrid - 1] = FALSE;
 	cuMemcpyHtoDAsync((CUdeviceptr)(g_skruns + cur_skrid_host), skr, sizeof(skrun_t), strm_submit);
 	/* No synchronization needed */
 
@@ -86,6 +87,7 @@ notify_done_skruns(unsigned *mtbs_done_cnts, unsigned n_checks)
 			if (mtbs_done_cnts[idx] == info_n_mtbs[idx]) {
 				notify = TRUE;
 				skrun_dones[idx] = TRUE;
+				mtbs_done_cnts[idx] = 0;
 			}
 		}
 		if (skrun_dones[idx]) {

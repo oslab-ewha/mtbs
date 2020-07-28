@@ -7,7 +7,7 @@ __device__ static volatile int	in_scheduling;
 /* number of scheduled mtbs per skr */
 __device__ static volatile unsigned	*skr_n_tbs_sched;
 
-__device__ static volatile unsigned	cur_skrid;
+__device__ static volatile unsigned	cur_skr_idx;
 
 __device__ unsigned cu_get_tb_sm_rr(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start);
 __device__ unsigned cu_get_tb_sm_rrf(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start);
@@ -34,15 +34,16 @@ static __device__ skrid_t
 get_sched_skrid(void)
 {
 	while (!going_to_shutdown) {
-		skrun_t	*skr = &d_skruns[cur_skrid];
+		skrun_t	*skr = &d_skruns[cur_skr_idx];
 		skid_t	skid;
 		skid = *(volatile skid_t *)(&skr->skid);
 		if (skid != 0) {
-			skrid_t	skrid = cur_skrid + 1;
+			skrid_t	skrid = cur_skr_idx + 1;
 
 			if (SKR_N_TBS_SCHED(skrid) == skr->n_tbs) {
-				skr->skid = 0;
-				cur_skrid = (cur_skrid + 1) % dn_queued_kernels;
+				d_skruns[(cur_skr_idx + dn_queued_kernels - 1) % dn_queued_kernels].skid = 0;
+				cur_skr_idx = (cur_skr_idx + 1) % dn_queued_kernels;
+				SKR_N_TBS_SCHED(cur_skr_idx + 1) = 0;
 				continue;
 			}
 			return skrid;

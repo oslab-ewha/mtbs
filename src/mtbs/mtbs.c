@@ -54,6 +54,8 @@ unsigned	n_submission_workers = 128;
 unsigned	n_streams = 128;
 unsigned	verbose = 0;
 
+extern unsigned	n_queued_kernels;
+
 static int
 parse_benchargs(int argc, char *argv[])
 {
@@ -128,7 +130,7 @@ parse_options(int argc, char *argv[])
 			setup_sched(optarg);
 			break;
 		case 'K':
-			sscanf(optarg, "%u", &n_submission_workers);
+			sscanf(optarg, "%u", &n_queued_kernels);
 			break;
 		case 'w':
 			sscanf(optarg, "%u", &n_submission_workers);
