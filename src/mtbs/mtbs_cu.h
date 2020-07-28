@@ -18,6 +18,9 @@ extern int	n_benches;
 extern int	n_tbs_submitted;
 extern int	n_mtbs_submitted;
 
+extern unsigned		n_max_mtbs;
+extern unsigned		n_max_mtbs_per_sm;
+
 extern unsigned		n_queued_kernels;
 
 extern CUcontext	context;
@@ -52,7 +55,6 @@ typedef struct {
 	unsigned	n_max_mtbs_per_sm;
 	unsigned	n_max_mtbs_per_MTB;
 	unsigned	n_mtbs;
-	BOOL		initialized;
 } fedkern_info_t;
 
 typedef struct {
@@ -72,6 +74,11 @@ typedef struct {
 typedef struct {
 	const char	*name;
 	tbs_type_t	type;
+	const char	*macro_TB_funcname;
+	void (*init_skrun)(void);
+	void (*fini_skrun)(void);
+	sk_t (*submit_skrun)(vstream_t vstream, skrun_t *skr);
+	void (*wait_skrun)(sk_t sk, vstream_t vstream, int *pres);
 } sched_t;
 
 __device__ extern BOOL	going_to_shutdown;
@@ -93,12 +100,14 @@ __device__ void sleep_in_kernel(void);
 __device__ unsigned find_mtb_start(unsigned id_sm, unsigned idx_mtb_start, unsigned n_mtbs);
 __device__ unsigned get_n_active_mtbs(unsigned id_sm);
 
+BOOL invoke_kernel_func(const char *funcname, void **params);
+
 unsigned long long get_ticks(void);
 
 __device__ void run_sub_kernel(skrun_t *skr);
 
-fedkern_info_t *create_fedkern_info(void);
-void free_fedkern_info(fedkern_info_t *fkinfo);
+void create_fedkern_info(void);
+void free_fedkern_info(void);
 
 unsigned get_n_mTBs_for_threads(unsigned n_threads);
 BOOL is_sm_avail(int id_sm, unsigned n_mTBs);

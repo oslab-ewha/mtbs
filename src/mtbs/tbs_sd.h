@@ -1,6 +1,7 @@
 #ifndef _TBS_SD_H_
 #define _TBS_SD_H_
 
+extern fedkern_info_t	*g_fkinfo;
 extern __device__ fedkern_info_t	*d_fkinfo;
 
 #if CUDA_COMPUTE >= 60

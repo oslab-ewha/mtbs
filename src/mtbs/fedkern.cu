@@ -1,12 +1,24 @@
 #include "mtbs_cu.h"
 
+#include "tbs_sd.h"
+
+fedkern_info_t	*g_fkinfo;
+
+__device__ fedkern_info_t	*d_fkinfo;
+
 extern unsigned	n_max_mtbs_per_sm;
 
-fedkern_info_t *
+extern "C" __global__ void
+func_setup_fedkern(fedkern_info_t *fkinfo)
+{
+	d_fkinfo = fkinfo;
+}
+
+void
 create_fedkern_info(void)
 {
 	fedkern_info_t	*fkinfo;
-	fedkern_info_t	*g_fkinfo;
+	void	*params[1];
 
 	fkinfo = (fedkern_info_t *)calloc(1, sizeof(fedkern_info_t));
 
@@ -20,29 +32,14 @@ create_fedkern_info(void)
 	g_fkinfo = (fedkern_info_t *)mtbs_cudaMalloc(sizeof(fedkern_info_t));
 	cuMemcpyHtoD((CUdeviceptr)g_fkinfo, fkinfo, sizeof(fedkern_info_t));
 
-	return g_fkinfo;
+	params[0] = &g_fkinfo;
+	invoke_kernel_func("func_setup_fedkern", params);
+
+	free(fkinfo);
 }
 
 void
-free_fedkern_info(fedkern_info_t *g_fkinfo)
+free_fedkern_info(void)
 {
 	mtbs_cudaFree(g_fkinfo);
-}
-
-void
-wait_fedkern_initialized(fedkern_info_t *d_fkinfo)
-{
-	CUstream	strm;
-
-	cuStreamCreate(&strm, CU_STREAM_NON_BLOCKING);
-
-	while (TRUE) {
-		BOOL	initialized = FALSE;
-
-		cuMemcpyDtoHAsync(&initialized, (CUdeviceptr)&d_fkinfo->initialized, sizeof(BOOL), strm);
-		cuStreamSynchronize(strm);
-		if (initialized)
-			break;
-	}
-	cuStreamDestroy(strm);
 }

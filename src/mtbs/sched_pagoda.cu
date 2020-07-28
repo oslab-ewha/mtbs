@@ -3,7 +3,7 @@
 #include <pthread.h>
 
 #include "tbs_sd.h"
-#include "pagoda.h"
+#include "sched_pagoda.h"
 
 #define MAX_ENTRIES_PER_POOL	64
 
@@ -23,14 +23,14 @@ static __device__ int		*d_readytable;
 static __device__ unsigned	d_numEntriesPerPool;
 static int	*ready_table;
 
-extern CUstream	strm_submit;
+static CUstream	strm_submit;
 
 #define NEXT_COLUMN(col)	do { (col) = ((col) + 1) % n_tasktables; } while (0)
 
 /* in usec */
 static unsigned long long	last_tick_submitted;
 
-#include "pagoda.cuh"
+#include "sched_pagoda.cuh"
 
 #define N_QUEUED_TASKID_PREV	256
 
@@ -185,8 +185,8 @@ find_empty_tentry(unsigned col)
 	return NULL;
 }
 
-sk_t
-submit_skrun_pagoda(skrun_t *skr)
+static sk_t
+submit_skrun_pagoda(vstream_t vstream, skrun_t *skr)
 {
 	tentry_t	*tentry;
 	unsigned	col;
@@ -217,8 +217,8 @@ again:
 	return (sk_t)tentry;
 }
 
-void
-wait_skrun_pagoda(sk_t sk, int *pres)
+static void
+wait_skrun_pagoda(sk_t sk, vstream_t vstream, int *pres)
 {
 	tentry_t	*tentry = (tentry_t *)sk;
 	tentry_t	*d_tentry;
@@ -254,13 +254,14 @@ func_init_pagoda(tentry_t *taskentries, int *ready_table, unsigned numEntriesPer
 	}
 }
 
-void
+static void
 init_skrun_pagoda(void)
 {
-	CUfunction	func_init_pagoda;
 	void		*params[4];
 	unsigned	n_tentries;
 	unsigned	i;
+
+	cuStreamCreate(&strm_submit, CU_STREAM_NON_BLOCKING);
 
 	numEntriesPerPool = n_queued_kernels;
 	if (numEntriesPerPool > MAX_ENTRIES_PER_POOL)
@@ -280,18 +281,26 @@ init_skrun_pagoda(void)
 		ready_table[i] = 0;
 	}
 
-	cuModuleGetFunction(&func_init_pagoda, mod, "func_init_pagoda");
 	params[0] = &g_taskentries;
 	params[1] = &ready_table;
 	params[2] = &numEntriesPerPool;
 	params[3] = &n_tasktables;
-	cuLaunchKernel(func_init_pagoda, 1, 1, 1, 1, 1, 1, 0, strm_submit, params, NULL);
-	cuStreamSynchronize(strm_submit);
+	invoke_kernel_func("func_init_pagoda", params);
 }
 
-void
+static void
 fini_skrun_pagoda(void)
 {
 	cuMemFreeHost(ready_table);
 	mtbs_cudaFree(g_taskentries);
 }
+
+sched_t sched_sd_pagoda = {
+	"pagoda",
+	TBS_TYPE_SD_PAGODA,
+	"pagoda_master_kernel",
+	init_skrun_pagoda,
+	fini_skrun_pagoda,
+	submit_skrun_pagoda,
+	wait_skrun_pagoda,
+};

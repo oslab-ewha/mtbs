@@ -11,6 +11,7 @@ usage(void)
 "     supported scheduling: hw(hardware scheduling, default)\n"
 "                           dynamic(dynamic software-defined scheduling)\n"
 "                           static(static software-defined scheduling)\n"
+"                           pagoda\n"
 "  -K <# of queued kernels>\n"
 "  -w <# of workers>: # of sumission worker, default: 128\n"
 "  -S <# of pre-allocated streams>: # of streams, default: 128\n"

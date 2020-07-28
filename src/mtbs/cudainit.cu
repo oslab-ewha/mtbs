@@ -5,6 +5,9 @@ CUmodule	mod;
 extern "C" unsigned	arg_n_MTBs_per_sm;
 extern "C" unsigned	arg_n_threads_per_MTB;
 
+unsigned	n_max_mtbs;
+unsigned	n_max_mtbs_per_sm;
+
 static BOOL
 setup_gpu_devinfo(CUdevice dev)
 {
@@ -54,6 +57,9 @@ setup_gpu_devinfo(CUdevice dev)
 		error("Invalid thread count per MTB: %d", n_threads_per_MTB);
 		return FALSE;
 	}
+
+	n_max_mtbs_per_sm = n_threads_per_MTB / N_THREADS_PER_mTB * n_MTBs_per_sm;
+	n_max_mtbs = n_sm_count * n_max_mtbs_per_sm;
 
 	return TRUE;
 }

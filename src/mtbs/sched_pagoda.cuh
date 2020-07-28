@@ -107,7 +107,7 @@ do_executer(unsigned tableid)
 	}
 }
 
-__device__ void
+extern "C" __global__ void
 pagoda_master_kernel(void)
 {
 	unsigned	tableid = blockIdx.x * 2 + blockIdx.y;
@@ -118,9 +118,4 @@ pagoda_master_kernel(void)
 	else {
 		do_executer(tableid);
 	}
-}
-
-__device__ void
-setup_sched_pagoda(fedkern_info_t *fkinfo)
-{
 }

@@ -27,8 +27,8 @@ __device__ int get_threadIdxY(void);
 
 __device__ void sync_threads(void);
 
-sk_t launch_kernel(skid_t skid, vstream_t strm, dim3 dimGrid, dim3 dimBlock, void *args[]);
-void wait_kernel(sk_t sk, vstream_t strm, int *res);
+sk_t launch_kernel(skid_t skid, vstream_t vstream, dim3 dimGrid, dim3 dimBlock, void *args[]);
+void wait_kernel(sk_t sk, vstream_t vstream, int *res);
 
 vstream_t create_vstream(void);
 void destroy_vstream(vstream_t vstream);
