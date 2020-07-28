@@ -228,7 +228,6 @@ wait_skrun_pagoda(sk_t sk, vstream_t vstream, int *pres)
 	d_tentry = g_taskentries + offset;
 	while (TRUE) {
 		if (ready_table[offset] == 0) {
-			tentry->ready = 0;
 			break;
 		}
 		usleep(100);
@@ -236,6 +235,7 @@ wait_skrun_pagoda(sk_t sk, vstream_t vstream, int *pres)
 
 	cuMemcpyDtoHAsync(pres, (CUdeviceptr)&d_tentry->skrun.res, sizeof(int), strm_submit);
 	cuStreamSynchronize(strm_submit);
+	tentry->ready = 0;
 }
 
 extern "C" __global__ void
