@@ -18,6 +18,7 @@ static __device__ volatile unsigned char	*mtb_epochs;
 /* sync counter per mTB */
 static __device__ volatile unsigned short	*mSTs;
 
+static __device__ BOOL	*d_mtbs_done;
 static __device__ unsigned	*d_mtbs_done_cnts;
 
 static __device__ skrid_t
@@ -50,9 +51,14 @@ advance_epoch_static(skrid_t skrid)
 	SYNCWARP();
 
 	if (IS_LEADER_THREAD()) {
+		skrun_t	*skr = &d_skruns[skrid - 1];
+
 		SKRID_MY(id_sm) = 0;
 		EPOCH_MY(id_sm) = (EPOCH_MY(id_sm) + 1) % EPOCH_MAX;
-		atomicAdd(d_mtbs_done_cnts + skrid - 1, 1);
+		if (atomicAdd(d_mtbs_done_cnts + skrid - 1, 1) == skr->n_mtbs_per_tb * skr->n_tbs - 1) {
+			d_mtbs_done[skrid - 1] = TRUE;
+			d_mtbs_done_cnts[skrid - 1] = 0;
+		}
 	}
 	SYNCWARP();
 }
@@ -94,7 +100,7 @@ func_macro_TB_static(void)
 
 extern "C" __global__ void
 func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs,
-		       unsigned n_queued_kernels, skrun_t *skruns, unsigned *mtbs_done_cnts)
+		       unsigned n_queued_kernels, skrun_t *skruns, BOOL *mtbs_done)
 {
 	int	size;
 	int	i;
@@ -110,10 +116,12 @@ func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs,
 
 	dn_queued_kernels = n_queued_kernels;
 	d_skruns = skruns;
-	d_mtbs_done_cnts = mtbs_done_cnts;
+	d_mtbs_done = mtbs_done;
+	d_mtbs_done_cnts = (unsigned *)malloc(n_queued_kernels * sizeof(unsigned));
+
 	for (i = 0; i < dn_queued_kernels; i++) {
 		skruns[i].skid = 0;
-		mtbs_done_cnts[i] = 0;
+		d_mtbs_done_cnts[i] = 0;
 	}
 
 	mAOTs = g_mAOTs;

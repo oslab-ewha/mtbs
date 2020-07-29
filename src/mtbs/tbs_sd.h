@@ -1,6 +1,8 @@
 #ifndef _TBS_SD_H_
 #define _TBS_SD_H_
 
+#include "../../config.h"
+
 extern fedkern_info_t	*g_fkinfo;
 extern __device__ fedkern_info_t	*d_fkinfo;
 
