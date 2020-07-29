@@ -153,7 +153,7 @@ get_n_active_mtbs(unsigned id_sm)
 	return count;
 }
 
-__device__ skrun_t *
+static __device__ skrun_t *
 get_skr_dyn(void)
 {
 	unsigned	id_sm = get_smid() + 1;
@@ -162,7 +162,7 @@ get_skr_dyn(void)
 	return &d_skruns[skrid - 1];
 }
 
-__device__ unsigned
+static __device__ unsigned short
 get_offset_TB_dyn(void)
 {
 	unsigned	id_sm = get_smid() + 1;
@@ -201,4 +201,8 @@ setup_sched_dyn(void)
 	for (i = 0; i < dn_queued_kernels; i++) {
 		skr_n_tbs_sched[i] = 0;
 	}
+
+	benchapi_funcs.get_skr = get_skr_dyn;
+	benchapi_funcs.get_offset_TB = get_offset_TB_dyn;
+	benchapi_funcs.sync_TB_threads = sync_TB_threads_dyn;
 }

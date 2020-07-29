@@ -238,22 +238,6 @@ wait_skrun_pagoda(sk_t sk, vstream_t vstream, int *pres)
 	tentry->ready = 0;
 }
 
-extern "C" __global__ void
-func_init_pagoda(tentry_t *taskentries, int *ready_table, unsigned numEntriesPerPool, unsigned n_tasktables)
-{
-	unsigned	i;
-	unsigned	n_tentries = numEntriesPerPool * n_tasktables;
-
-	d_taskentries = taskentries;
-	d_readytable = ready_table;
-	d_numEntriesPerPool = numEntriesPerPool;
-
-	for (i = 0; i < n_tentries; i++) {
-		taskentries[i].ready = 0;
-		taskentries[i].sched = 0;
-	}
-}
-
 static void
 init_skrun_pagoda(void)
 {

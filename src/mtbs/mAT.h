@@ -13,8 +13,6 @@
 #define EPOCH(id_sm, idx)	mtb_epochs[mTB_INDEX(id_sm, idx) - 1]
 #define EPOCH_MY(id_sm)		mtb_epochs[mTB_INDEX_MY(id_sm) - 1]
 
-#define IS_LEADER_THREAD()	(threadIdx.x % N_THREADS_PER_mTB == 0)
-
 #define mTB_ALLOC_TABLE_EPOCH(epch)	(mATs + mTB_TOTAL_COUNT() * (epch))
 #define mTB_ALLOC_TABLE(id_sm, idx)	(mATs + mTB_TOTAL_COUNT() * EPOCH(id_sm, idx))
 #define mTB_ALLOC_TABLE_MY(id_sm)	(mATs + mTB_TOTAL_COUNT() * EPOCH_MY(id_sm))

@@ -9,7 +9,7 @@ static __shared__ unsigned	doneCtr[MAX_ENTRIES_PER_POOL];
 
 static __device__ BOOL	*psched_done;
 
-__device__ skrun_t *
+static __device__ skrun_t *
 get_skr_pagoda(void)
 {
 	wentry_t	*wentry = &warptable[threadIdx.x / 32 - 1];
@@ -118,4 +118,23 @@ pagoda_master_kernel(void)
 	else {
 		do_executer(tableid);
 	}
+}
+
+extern "C" __global__ void
+func_init_pagoda(tentry_t *taskentries, int *ready_table, unsigned numEntriesPerPool, unsigned n_tasktables)
+{
+	unsigned	i;
+	unsigned	n_tentries = numEntriesPerPool * n_tasktables;
+
+	d_taskentries = taskentries;
+	d_readytable = ready_table;
+	d_numEntriesPerPool = numEntriesPerPool;
+
+	for (i = 0; i < n_tentries; i++) {
+		taskentries[i].ready = 0;
+		taskentries[i].sched = 0;
+	}
+
+	benchapi_funcs.get_skr = get_skr_pagoda;
+	benchapi_funcs.get_offset_TB = get_offset_TB_pagoda;
 }

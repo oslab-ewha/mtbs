@@ -1,12 +1,8 @@
 #include "mtbs_cu.h"
 
-extern __device__ skrun_t *get_skr_dyn(void);
-extern __device__ skrun_t *get_skr_pagoda(void);
-extern __device__ unsigned short get_offset_TB_dyn(void);
-extern __device__ unsigned short get_offset_TB_pagoda(void);
-extern __device__ void sync_TB_threads_dyn(void);
+#include "tbs_sd.h"
 
-/* TODO: benchmark API is not ready for a static scheduler */
+__device__ benchapi_funcs_t	benchapi_funcs;
 
 __device__ unsigned
 get_random(unsigned randx)
@@ -22,16 +18,10 @@ get_gridDimX(void)
 {
         skrun_t    *skr;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+	if (d_tbs_type == TBS_TYPE_HW)
 		return gridDim.x;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
 
 	return skr->dimGrid.x;
 }
@@ -41,16 +31,10 @@ get_gridDimY(void)
 {
         skrun_t	*skr;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return gridDim.y;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
 
 	return skr->dimGrid.y;
 }
@@ -61,18 +45,12 @@ get_blockIdxX(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return blockIdx.x;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		offset = get_offset_TB_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		offset = get_offset_TB_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
+	offset = benchapi_funcs.get_offset_TB();
+
 	return ((offset * N_THREADS_PER_mTB) / (skr->dimBlock.x * skr->dimBlock.y)) % skr->dimGrid.x;
 }
 
@@ -82,18 +60,12 @@ get_blockIdxY(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return blockIdx.y;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		offset = get_offset_TB_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		offset = get_offset_TB_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
+	offset = benchapi_funcs.get_offset_TB();
+
 	return ((offset * N_THREADS_PER_mTB) / (skr->dimBlock.x * skr->dimBlock.y)) / skr->dimGrid.x;
 }
 
@@ -102,16 +74,10 @@ get_blockDimX(void)
 {
 	skrun_t	*skr;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return blockDim.x;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
 
 	return skr->dimBlock.x;
 }
@@ -121,18 +87,12 @@ get_blockDimY(void)
 {
 	skrun_t	*skr;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return blockDim.y;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		break;
-	}
 
-	return skr->dimBlock.y;
+	skr = benchapi_funcs.get_skr();
+
+	return skr->dimBlock.y;	
 }
 
 __device__ int
@@ -141,18 +101,12 @@ get_threadIdxX(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return threadIdx.x;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		offset = get_offset_TB_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		offset = get_offset_TB_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
+	offset = benchapi_funcs.get_offset_TB();
+
 	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) % skr->dimBlock.x + (threadIdx.x % N_THREADS_PER_mTB) % skr->dimBlock.x;
 }
 
@@ -162,18 +116,11 @@ get_threadIdxY(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW)
 		return threadIdx.y;
-	case TBS_TYPE_SD_PAGODA:
-		skr = get_skr_pagoda();
-		offset = get_offset_TB_pagoda();
-		break;
-	default:
-		skr = get_skr_dyn();
-		offset = get_offset_TB_dyn();
-		break;
-	}
+
+	skr = benchapi_funcs.get_skr();
+	offset = benchapi_funcs.get_offset_TB();
 
 	return ((offset * N_THREADS_PER_mTB) % (skr->dimBlock.x * skr->dimBlock.y)) / skr->dimBlock.x + threadIdx.x % N_THREADS_PER_mTB / skr->dimBlock.x;
 }
@@ -181,12 +128,10 @@ get_threadIdxY(void)
 __device__ void
 sync_threads(void)
 {
-	switch (d_tbs_type) {
-	case TBS_TYPE_HW:
+        if (d_tbs_type == TBS_TYPE_HW) {
 		__syncthreads();
 		return;
-	default:
-		sync_TB_threads_dyn();
-		break;
 	}
+
+	benchapi_funcs.sync_TB_threads();
 }
