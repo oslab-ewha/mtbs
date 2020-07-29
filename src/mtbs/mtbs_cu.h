@@ -85,7 +85,6 @@ __device__ extern BOOL	going_to_shutdown;
 __device__ extern tbs_type_t	d_tbs_type;
 __device__ extern unsigned	dn_queued_kernels;
 __device__ extern skrun_t	*d_skruns;
-__device__ extern unsigned	*d_mtbs_done_cnts;
 
 extern sched_t		*sched;
 extern benchrun_t	*benchruns;

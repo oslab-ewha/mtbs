@@ -18,6 +18,8 @@ static __device__ volatile unsigned char	*mtb_epochs;
 /* sync counter per mTB */
 static __device__ volatile unsigned short	*mSTs;
 
+static __device__ unsigned	*d_mtbs_done_cnts;
+
 static __device__ skrid_t
 get_skrid_static(void)
 {

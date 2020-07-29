@@ -10,7 +10,6 @@ CUfunction	func_sub_kernel;
 
 __device__ tbs_type_t	d_tbs_type;
 __device__ skrun_t	*d_skruns;
-__device__ unsigned	*d_mtbs_done_cnts;
 __device__ unsigned	dn_queued_kernels;
 
 #define SK_PROTO(name)	__device__ int name(void *args[])

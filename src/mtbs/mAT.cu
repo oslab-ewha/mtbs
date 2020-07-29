@@ -6,14 +6,12 @@
 #include "tbs_sd.h"
 
 static skrun_t	*g_skruns;
-static unsigned	*g_mtbs_done_cnts;
+static BOOL	*g_mtbs_done;
 
 static BOOL	*skrun_dones;
 
 static unsigned	skrid_done_min;
 static unsigned	cur_skrid_host;
-
-static unsigned	*info_n_mtbs;
 
 static BOOL	checker_done;
 static pthread_t	checker;
@@ -43,7 +41,6 @@ submit_skrun_mAT(skrun_t *skr)
 	}
 
 	skrid = cur_skrid_host + 1;
-	info_n_mtbs[skrid - 1] = skr->n_tbs * skr->n_mtbs_per_tb;
 	skrun_dones[skrid - 1] = FALSE;
 	cuMemcpyHtoDAsync((CUdeviceptr)(g_skruns + cur_skrid_host), skr, sizeof(skrun_t), strm_submit);
 	/* No synchronization needed */
@@ -75,7 +72,7 @@ wait_skrun_mAT(sk_t sk, int *pres)
 }
 
 static void
-notify_done_skruns(unsigned *mtbs_done_cnts, unsigned n_checks)
+notify_done_skruns(unsigned n_checks)
 {
 	unsigned	min_new = skrid_done_min;
 	BOOL		notify = FALSE;
@@ -84,10 +81,10 @@ notify_done_skruns(unsigned *mtbs_done_cnts, unsigned n_checks)
 	idx = skrid_done_min;
 	for (i = 0; i < n_checks; i++) {
 		if (!skrun_dones[idx]) {
-			if (mtbs_done_cnts[idx] == info_n_mtbs[idx]) {
+			if (g_mtbs_done[idx]) {
 				notify = TRUE;
 				skrun_dones[idx] = TRUE;
-				mtbs_done_cnts[idx] = 0;
+				g_mtbs_done[idx] = FALSE;
 			}
 		}
 		if (skrun_dones[idx]) {
@@ -111,7 +108,7 @@ skruns_checkfunc(void *arg)
 		pthread_mutex_lock(&mutex);
 
 		if (n_checks > 0) {
-			notify_done_skruns(g_mtbs_done_cnts, n_checks);
+			notify_done_skruns(n_checks);
 		}
 
 		pthread_mutex_unlock(&mutex);
@@ -125,13 +122,16 @@ void
 init_skrun_mAT(void)
 {
 	void	*params[5];
+	unsigned	i;
 
 	cuStreamCreate(&strm_submit, CU_STREAM_NON_BLOCKING);
 
 	g_skruns = (skrun_t *)mtbs_cudaMalloc(sizeof(skrun_t) * n_queued_kernels);
-	cuMemAllocHost((void **)&g_mtbs_done_cnts, sizeof(unsigned) * n_queued_kernels);
+	cuMemAllocHost((void **)&g_mtbs_done, sizeof(BOOL) * n_queued_kernels);
+	for (i = 0; i < n_queued_kernels; i++) {
+		g_mtbs_done[i] = FALSE;
+	}
 
-	info_n_mtbs = (unsigned *)calloc(n_queued_kernels, sizeof(unsigned));
 	skrun_dones = (BOOL *)calloc(n_queued_kernels, sizeof(BOOL));
 
 	pthread_create(&checker, NULL, skruns_checkfunc, NULL);
@@ -143,7 +143,7 @@ init_skrun_mAT(void)
 	params[1] = &g_mtb_epochs;
 	params[2] = &n_queued_kernels;
 	params[3] = &g_skruns;
-	params[4] = &g_mtbs_done_cnts;
+	params[4] = &g_mtbs_done;
 	if (!invoke_kernel_func("func_init_skrun_mAT", params)) {
 		exit(12);
 	}

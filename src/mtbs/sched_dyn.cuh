@@ -37,17 +37,8 @@ get_sched_skrid(void)
 		skrun_t	*skr = &d_skruns[cur_skr_idx];
 		skid_t	skid;
 		skid = *(volatile skid_t *)(&skr->skid);
-		if (skid != 0) {
-			skrid_t	skrid = cur_skr_idx + 1;
-
-			if (SKR_N_TBS_SCHED(skrid) == skr->n_tbs) {
-				d_skruns[(cur_skr_idx + dn_queued_kernels - 1) % dn_queued_kernels].skid = 0;
-				cur_skr_idx = (cur_skr_idx + 1) % dn_queued_kernels;
-				SKR_N_TBS_SCHED(cur_skr_idx + 1) = 0;
-				continue;
-			}
-			return skrid;
-		}
+		if (skid != 0)
+			return cur_skr_idx + 1;
 		if (*(volatile BOOL *)&d_fkinfo->sched_done)
 			return 0;
 		sleep_in_kernel();
@@ -98,6 +89,10 @@ assign_tb(void)
 		mTB_SYNC(id_sm_sched, idx_mtb_start + i) = 0;
 	}
 	SKR_N_TBS_SCHED(skrid)++;
+	if (SKR_N_TBS_SCHED(skrid) == skr->n_tbs) {
+		cur_skr_idx = (cur_skr_idx + 1) % dn_queued_kernels;
+		SKR_N_TBS_SCHED(skrid) = 0;
+	}
 	return TRUE;
 }
 
