@@ -31,9 +31,10 @@ get_skrid_static(void)
 	for (;;) {
 		skrid_t	skrid;
 
-		skrid = SKRID_MY(id_sm);
-		if (skrid != 0)
+		skrid = *(volatile unsigned short *)&SKRID_MY(id_sm);
+		if (skrid != 0 && *(volatile unsigned *)&d_skruns[skrid - 1].n_mtbs_per_tb > 0) {
 			return skrid;
+		}
 		if (going_to_shutdown || *(volatile BOOL *)&d_fkinfo->sched_done)
 			break;
 
