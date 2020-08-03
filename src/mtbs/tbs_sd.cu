@@ -2,16 +2,6 @@
 
 #include "tbs_sd.h"
 
-extern __device__ void setup_sched_dyn(fedkern_info_t *fkinfo);
-
-extern __device__ skrid_t get_skrid_dyn(void);
-extern __device__ void advance_epoch_dyn(skrid_t skrid);
-
-extern __device__ void setup_sched_pagoda(fedkern_info_t *fkinfo);
-extern __device__ void pagoda_master_kernel(void);
-
-__device__ BOOL	going_to_shutdown;
-
 static BOOL
 launch_macro_TB(void)
 {

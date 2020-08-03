@@ -47,14 +47,13 @@ typedef enum {
 } tbs_type_t;
 
 typedef struct {
-	BOOL		sched_done;
-	unsigned	sched_id;
+	BOOL		sched_done, going_to_shutdown;
 	tbs_type_t	tbs_type;
-	void *		sched_arg;
 	unsigned	n_sm_count;
 	unsigned	n_max_mtbs_per_sm;
 	unsigned	n_max_mtbs_per_MTB;
 	unsigned	n_mtbs;
+	unsigned	n_queued_kernels;
 } fedkern_info_t;
 
 typedef struct {
@@ -81,9 +80,6 @@ typedef struct {
 	void (*wait_skrun)(sk_t sk, vstream_t vstream, int *pres);
 } sched_t;
 
-__device__ extern BOOL	going_to_shutdown;
-__device__ extern tbs_type_t	d_tbs_type;
-__device__ extern unsigned	dn_queued_kernels;
 __device__ extern skrun_t	*d_skruns;
 
 extern sched_t		*sched;

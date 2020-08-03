@@ -35,7 +35,7 @@ get_skrid_static(void)
 		if (skrid != 0 && *(volatile unsigned *)&d_skruns[skrid - 1].n_mtbs_per_tb > 0) {
 			return skrid;
 		}
-		if (going_to_shutdown || *(volatile BOOL *)&d_fkinfo->sched_done)
+		if (d_fkinfo->going_to_shutdown || *(volatile BOOL *)&d_fkinfo->sched_done)
 			break;
 
 		SYNCWARP();
@@ -84,7 +84,7 @@ get_offset_TB_static(void)
 extern "C" __global__ void
 func_macro_TB_static(void)
 {
-	while (!going_to_shutdown) {
+	while (!d_fkinfo->going_to_shutdown) {
 		skrid_t	skrid;
 		skrun_t	*skr;
 
@@ -100,8 +100,7 @@ func_macro_TB_static(void)
 }
 
 extern "C" __global__ void
-func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs,
-		       unsigned n_queued_kernels, skrun_t *skruns, BOOL *mtbs_done)
+func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs, skrun_t *skruns, BOOL *mtbs_done)
 {
 	int	size;
 	int	i;
@@ -111,16 +110,15 @@ func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs,
 	mSTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
 	if (mSTs == NULL) {
 		printf("out of memory: sync table cannot be allocated\n");
-		going_to_shutdown = TRUE;
+		d_fkinfo->going_to_shutdown = TRUE;
 		return;
 	}
 
-	dn_queued_kernels = n_queued_kernels;
 	d_skruns = skruns;
 	d_mtbs_done = mtbs_done;
-	d_mtbs_done_cnts = (unsigned *)malloc(n_queued_kernels * sizeof(unsigned));
+	d_mtbs_done_cnts = (unsigned *)malloc(d_fkinfo->n_queued_kernels * sizeof(unsigned));
 
-	for (i = 0; i < dn_queued_kernels; i++) {
+	for (i = 0; i < d_fkinfo->n_queued_kernels; i++) {
 		skruns[i].skid = 0;
 		d_mtbs_done_cnts[i] = 0;
 	}

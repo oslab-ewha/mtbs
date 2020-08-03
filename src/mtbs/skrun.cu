@@ -8,9 +8,7 @@ CUcontext	context;
 
 CUfunction	func_sub_kernel;
 
-__device__ tbs_type_t	d_tbs_type;
 __device__ skrun_t	*d_skruns;
-__device__ unsigned	dn_queued_kernels;
 
 #define SK_PROTO(name)	__device__ int name(void *args[])
 #define SK_FUNCS(base)	SK_PROTO(base);
@@ -88,18 +86,9 @@ wait_kernel(sk_t sk, vstream_t vstream, int *pres)
 	sched->wait_skrun(sk, vstream, pres);
 }
 
-extern "C" __global__ void
-func_init_skrun(tbs_type_t type)
-{
-	d_tbs_type = type;
-}
-
 void
 init_skrun(void)
 {
-	CUfunction	func_init_skrun;
-	void		*params[1];
-	CUstream	strm;
 	CUresult res;
 
 	res = cuModuleGetFunction(&func_sub_kernel, mod, "sub_kernel_func");
@@ -109,12 +98,6 @@ init_skrun(void)
 
 	if (sched->init_skrun)
 		sched->init_skrun();
-
-	cuModuleGetFunction(&func_init_skrun, mod, "func_init_skrun");
-	params[0] = &sched->type;
-	cuStreamCreate(&strm, CU_STREAM_NON_BLOCKING);
-	cuLaunchKernel(func_init_skrun, 1, 1, 1, 1, 1, 1, 0, strm, params, NULL);
-	cuStreamDestroy(strm);
 }
 
 void

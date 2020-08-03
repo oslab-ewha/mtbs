@@ -485,7 +485,7 @@ skruns_checkfunc(void *arg)
 static void
 init_skrun_static(void)
 {
-	void	*params[5];
+	void	*params[4];
 	int	i;
 
 	cuStreamCreate(&strm_static, CU_STREAM_NON_BLOCKING);
@@ -505,9 +505,8 @@ init_skrun_static(void)
 
 	params[0] = &g_mAOTs;
 	params[1] = &g_mtb_epochs;
-	params[2] = &n_queued_kernels;
-	params[3] = &g_skruns;
-	params[4] = &g_mtbs_done;
+	params[2] = &g_skruns;
+	params[3] = &g_mtbs_done;
 	if (!invoke_kernel_func("func_init_skrun_static", params)) {
 		exit(12);
 	}

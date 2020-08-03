@@ -104,8 +104,7 @@ am_mtbs_OBJECTS = mtbs.$(OBJEXT) tbs_sd.$(OBJEXT) tbs_native.$(OBJEXT) \
 	benchmgr.$(OBJEXT) benchrun.$(OBJEXT) skrun.$(OBJEXT) \
 	fedkern.$(OBJEXT) report.$(OBJEXT) misc.$(OBJEXT) \
 	benchapi.$(OBJEXT) sched.$(OBJEXT) sched_dyn_rr.$(OBJEXT) \
-	sched_dyn_rrf.$(OBJEXT) sched_dyn_fca.$(OBJEXT) \
-	sched_dyn_rrm.$(OBJEXT) mAT.$(OBJEXT) sched_dyn.$(OBJEXT) \
+	sched_dyn_rrf.$(OBJEXT) sched_dyn.$(OBJEXT) \
 	sched_static.$(OBJEXT) sched_hw.$(OBJEXT) \
 	sched_pagoda.$(OBJEXT) stream.$(OBJEXT) mem.$(OBJEXT) \
 	cudainit.$(OBJEXT)
@@ -278,8 +277,7 @@ DISTCLEANFILES = *~
 LINK = @NVCC_PATH@ @NVCC_ARCHITECTURE@ -o $@
 mtbs_SOURCES = mtbs.c tbs_sd.cu tbs_native.cu benchmgr.cu benchrun.cu skrun.cu \
 	fedkern.cu report.cu misc.cu mtbs.h mtbs_cu.h benchapi.cu sched.cu \
-	sched_dyn.h sched_dyn_rr.cu sched_dyn_rrf.cu sched_dyn_fca.cu sched_dyn_rrm.cu \
-	mAT.cu mAT.h \
+	sched_dyn.h sched_dyn_rr.cu sched_dyn_rrf.cu \
 	sched_dyn.cu sched_dyn.cuh \
 	sched_static.cu sched_static.cuh \
 	sched_hw.cu \

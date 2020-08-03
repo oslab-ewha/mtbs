@@ -18,7 +18,7 @@ get_gridDimX(void)
 {
         skrun_t    *skr;
 
-	if (d_tbs_type == TBS_TYPE_HW)
+	if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return gridDim.x;
 
 	skr = benchapi_funcs.get_skr();
@@ -31,7 +31,7 @@ get_gridDimY(void)
 {
         skrun_t	*skr;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return gridDim.y;
 
 	skr = benchapi_funcs.get_skr();
@@ -45,7 +45,7 @@ get_blockIdxX(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return blockIdx.x;
 
 	skr = benchapi_funcs.get_skr();
@@ -60,7 +60,7 @@ get_blockIdxY(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return blockIdx.y;
 
 	skr = benchapi_funcs.get_skr();
@@ -74,7 +74,7 @@ get_blockDimX(void)
 {
 	skrun_t	*skr;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return blockDim.x;
 
 	skr = benchapi_funcs.get_skr();
@@ -87,7 +87,7 @@ get_blockDimY(void)
 {
 	skrun_t	*skr;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return blockDim.y;
 
 	skr = benchapi_funcs.get_skr();
@@ -101,7 +101,7 @@ get_threadIdxX(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return threadIdx.x;
 
 	skr = benchapi_funcs.get_skr();
@@ -116,7 +116,7 @@ get_threadIdxY(void)
 	skrun_t	*skr;
 	unsigned	offset;
 
-        if (d_tbs_type == TBS_TYPE_HW)
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW)
 		return threadIdx.y;
 
 	skr = benchapi_funcs.get_skr();
@@ -128,7 +128,7 @@ get_threadIdxY(void)
 __device__ void
 sync_threads(void)
 {
-        if (d_tbs_type == TBS_TYPE_HW) {
+        if (d_fkinfo->tbs_type == TBS_TYPE_HW) {
 		__syncthreads();
 		return;
 	}

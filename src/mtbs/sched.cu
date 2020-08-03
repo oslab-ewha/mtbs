@@ -10,8 +10,6 @@ static sched_t	*all_sched[] = {
 };
 
 sched_t	*sched = &sched_hw;
-unsigned	sched_id = 1;
-char		*sched_argstr;
 
 extern BOOL run_native_tbs(unsigned *pticks);
 extern BOOL run_sd_tbs(unsigned *pticks);
@@ -26,32 +24,18 @@ extern void init_streams(void);
 extern void fini_mem(void);
 
 extern "C" void
-setup_sched(const char *strpol)
+setup_sched(const char *name)
 {
 	unsigned	i;
 
 	for (i = 0; all_sched[i]; i++) {
-		int	len = strlen(all_sched[i]->name);
-
-		if (strncmp(strpol, all_sched[i]->name, len) == 0) {
-			tbs_type_t	type;
-
+		if (strcmp(name, all_sched[i]->name) == 0) {
 			sched = all_sched[i];
-			type = sched->type;
-			sched_id = i + 1;
-
-			if (strpol[len] ==':')
-				sched_argstr = strdup(strpol + len + 1);
-			else if (strpol[len] != '\0')
-				continue;
-
-			sched->name = strdup(strpol);
-			sched->type = type;
 			return;
 		}
 	}
 
-	FATAL(1, "unknown scheduling policy: %s", strpol);
+	FATAL(1, "unknown TBS scheduler: %s", name);
 }
 
 BOOL
@@ -92,8 +76,7 @@ run_tbs(unsigned *pticks)
 
 	init_mem();
 
-	if (sched->type != TBS_TYPE_HW)
-		create_fedkern_info();
+	create_fedkern_info();
 
 	init_skrun();
 	init_benchruns();
@@ -106,8 +89,7 @@ run_tbs(unsigned *pticks)
 
 	fini_skrun();
 
-	if (sched->type != TBS_TYPE_HW)
-		free_fedkern_info();
+	free_fedkern_info();
 
 	fini_mem();
 	return res;

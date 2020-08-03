@@ -22,12 +22,14 @@ create_fedkern_info(void)
 
 	fkinfo = (fedkern_info_t *)calloc(1, sizeof(fedkern_info_t));
 
+	fkinfo->sched_done = FALSE;
+	fkinfo->going_to_shutdown = FALSE;
+	fkinfo->tbs_type = sched->type;
 	fkinfo->n_sm_count = n_sm_count;
-	fkinfo->sched_id = sched_id;
 	fkinfo->n_mtbs = n_mtbs_submitted;
 	fkinfo->n_max_mtbs_per_sm = n_max_mtbs_per_sm;
 	fkinfo->n_max_mtbs_per_MTB = n_max_mtbs_per_sm / n_MTBs_per_sm;
-	fkinfo->sched_done = FALSE;
+	fkinfo->n_queued_kernels = n_queued_kernels;
 
 	g_fkinfo = (fedkern_info_t *)mtbs_cudaMalloc(sizeof(fedkern_info_t));
 	cuMemcpyHtoD((CUdeviceptr)g_fkinfo, fkinfo, sizeof(fedkern_info_t));
