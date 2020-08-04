@@ -44,6 +44,7 @@ typedef enum {
 	TBS_TYPE_SD_DYNAMIC,
 	TBS_TYPE_SD_STATIC,
 	TBS_TYPE_SD_PAGODA,
+	TBS_TYPE_SD_GEMTC,
 } tbs_type_t;
 
 typedef struct {

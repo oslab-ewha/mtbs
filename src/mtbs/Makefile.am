@@ -12,6 +12,7 @@ mtbs_SOURCES = mtbs.c tbs_sd.cu tbs_native.cu benchmgr.cu benchrun.cu skrun.cu \
 	sched_static.cu sched_static.cuh \
 	sched_hw.cu \
 	sched_pagoda.cu sched_pagoda.h sched_pagoda.cuh \
+	sched_gemtc.cu sched_gemtc.cuh \
 	stream.cu stream.h mem.cu cudainit.cu
 
 sched_dyn.o: sched_dyn.cuh
