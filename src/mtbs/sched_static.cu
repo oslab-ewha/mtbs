@@ -129,8 +129,10 @@ find_mtbs_on_sm(unsigned id_sm, unsigned n_mtbs, unsigned char *epochs)
 		int	epoch_alloc = EPOCH_HOST_ALLOC(id_sm, idx + 1);
 
 		/* Next epoch entry should be set to zero to proect overrun */
-		if (NEXT_EPOCH(NEXT_EPOCH(epoch_alloc)) == epoch)
+		if (NEXT_EPOCH(NEXT_EPOCH(epoch_alloc)) == epoch) {
+			idx = (idx + 1) % n_max_mtbs_per_sm;
 			continue;
+		}
 
 		epochs[idx] = epoch_alloc;
 		n_mtbs_cur++;
