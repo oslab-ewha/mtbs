@@ -106,8 +106,9 @@ am_mtbs_OBJECTS = mtbs.$(OBJEXT) tbs_sd.$(OBJEXT) tbs_native.$(OBJEXT) \
 	benchapi.$(OBJEXT) sched.$(OBJEXT) sched_dyn_rr.$(OBJEXT) \
 	sched_dyn_rrf.$(OBJEXT) sched_dyn.$(OBJEXT) \
 	sched_static.$(OBJEXT) sched_hw.$(OBJEXT) \
-	sched_pagoda.$(OBJEXT) sched_gemtc.$(OBJEXT) stream.$(OBJEXT) \
-	mem.$(OBJEXT) cudainit.$(OBJEXT)
+	sched_pagoda.$(OBJEXT) sched_gemtc.$(OBJEXT) \
+	sched_gemtcP.$(OBJEXT) stream.$(OBJEXT) mem.$(OBJEXT) \
+	cudainit.$(OBJEXT)
 mtbs_OBJECTS = $(am_mtbs_OBJECTS)
 mtbs_DEPENDENCIES = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
 	../../benchmarks/inhouse/mklc/libmklc.a \
@@ -282,7 +283,7 @@ mtbs_SOURCES = mtbs.c tbs_sd.cu tbs_native.cu benchmgr.cu benchrun.cu skrun.cu \
 	sched_static.cu sched_static.cuh \
 	sched_hw.cu \
 	sched_pagoda.cu sched_pagoda.h sched_pagoda.cuh \
-	sched_gemtc.cu sched_gemtc.cuh \
+	sched_gemtc.cu sched_gemtc.cuh sched_gemtcP.cu sched_gemtcP.cuh \
 	stream.cu stream.h mem.cu cudainit.cu
 
 mtbs_LDADD = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
@@ -610,7 +611,8 @@ uninstall-am: uninstall-binPROGRAMS
 sched_dyn.o: sched_dyn.cuh
 sched_static.o: sched_static.cuh
 sched_pagoda.o: sched_pagoda.cuh
-mAT.o: mAT.cuh
+sched_gemtc.o:  sched_gemtc.cuh
+sched_gemtcP.o:  sched_gemtcP.cuh
 .cu.o:
 	@NVCC_PATH@ -dc $(AM_CPPFLAGS) --maxrregcount 32 @NVCC_CPPFLAGS@ @NVCC_ARCHITECTURE@ $< -o $@
 

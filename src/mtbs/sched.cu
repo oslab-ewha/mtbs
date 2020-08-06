@@ -5,9 +5,10 @@ extern sched_t	sched_sd_dynamic;
 extern sched_t	sched_sd_static;
 extern sched_t	sched_sd_pagoda;
 extern sched_t	sched_sd_gemtc;
+extern sched_t	sched_sd_gemtcP;
 
 static sched_t	*all_sched[] = {
-	&sched_hw, &sched_sd_dynamic, &sched_sd_static, &sched_sd_pagoda, &sched_sd_gemtc, NULL
+	&sched_hw, &sched_sd_dynamic, &sched_sd_static, &sched_sd_pagoda, &sched_sd_gemtc, &sched_sd_gemtcP, NULL
 };
 
 sched_t	*sched = &sched_hw;
