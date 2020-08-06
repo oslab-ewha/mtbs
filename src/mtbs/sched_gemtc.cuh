@@ -83,8 +83,10 @@ func_macro_TB_gemtc(void)
 
 			run_sub_kernel(skr);
 		}
-		d_mtbs_done[skrid - 1] = TRUE;
-		skr->skid = 0;
+		if (IS_LEADER_THREAD()) {
+			d_mtbs_done[skrid - 1] = TRUE;
+			skr->skid = 0;
+		}
 	}
 }
 
