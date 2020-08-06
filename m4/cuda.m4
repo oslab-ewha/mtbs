@@ -56,6 +56,10 @@ if test -n "$cuda_microarch"; then
 		NVCC_ARCHITECTURE="--gpu-architecture sm_53"
 		AC_DEFINE([CUDA_COMPUTE], [53], [GPU micro architecture])
 		;;
+		p100)
+		NVCC_ARCHITECTURE="--gpu-architecture sm_60"
+		AC_DEFINE([CUDA_COMPUTE], [60], [GPU micro architecture])
+		;;
 		pascal)
 		NVCC_ARCHITECTURE="--gpu-architecture sm_61"
 		AC_DEFINE([CUDA_COMPUTE], [61], [GPU micro architecture])

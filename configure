@@ -4547,6 +4547,12 @@ $as_echo "#define CUDA_COMPUTE 20" >>confdefs.h
 $as_echo "#define CUDA_COMPUTE 53" >>confdefs.h
 
 		;;
+		p100)
+		NVCC_ARCHITECTURE="--gpu-architecture sm_60"
+
+$as_echo "#define CUDA_COMPUTE 60" >>confdefs.h
+
+		;;
 		pascal)
 		NVCC_ARCHITECTURE="--gpu-architecture sm_61"
 
