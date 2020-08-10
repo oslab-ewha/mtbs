@@ -35,7 +35,7 @@ lma(void *args[])
 	return value;
 }
 
-int
+static int
 cookarg_lma(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
 	unsigned char	**chunks, **d_chunks;
@@ -76,10 +76,14 @@ bench_lma(dim3 dimGrid, dim3 dimBlock, void *args[])
 	sk_t	sk;
 	int	res;
 
+	cookarg_lma(dimGrid, dimBlock, args);
+
 	strm = create_vstream();
 	sk = launch_kernel(LMA, strm, dimGrid, dimBlock, args);
 	wait_kernel(sk, strm, &res);
 	destroy_vstream(strm);
+
+	mtbs_cudaFree(args[3]);
 
 	return res;
 }

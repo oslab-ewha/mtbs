@@ -62,7 +62,6 @@ typedef struct {
 typedef struct {
 	const char	*code;
 	skid_t		skid;
-	cookarg_func_t	cookarg_func;
 	bench_func_t	bench_func;
 } benchinfo_t;
 

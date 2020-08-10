@@ -26,7 +26,7 @@ gma(void *args[])
 	return value;
 }
 
-int
+static int
 cookarg_gma(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
 	unsigned char	*gmem;
@@ -56,10 +56,14 @@ bench_gma(dim3 dimGrid, dim3 dimBlock, void *args[])
 	sk_t	sk;
 	int	res;
 
+	cookarg_gma(dimGrid, dimBlock, args);
+
 	strm = create_vstream();
 	sk = launch_kernel(GMA, strm, dimGrid, dimBlock, args);
 	wait_kernel(sk, strm, &res);
 	destroy_vstream(strm);
+
+	mtbs_cudaFree(args[2]);
 
 	return res;
 }

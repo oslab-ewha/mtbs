@@ -156,7 +156,7 @@ setup_clusters(kmeans_conf_t *pkmc, float *features, int npoints, int nclusters,
 	free(clusters);
 }
 
-int
+static int
 cookarg_kmeans(dim3 dimGrid, dim3 dimBlock, void *args[])
 {
 	int	npoints_per_thread = (int)(long long)args[0];
@@ -209,10 +209,14 @@ bench_kmeans(dim3 dimGrid, dim3 dimBlock, void *args[])
 	sk_t	sk;
 	int	res;
 
+	cookarg_kmeans(dimGrid, dimBlock, args);
+
 	strm = create_vstream();
 	sk = launch_kernel(KMEANS, strm, dimGrid, dimBlock, args);
 	wait_kernel(sk, strm, &res);
 	destroy_vstream(strm);
+
+	mtbs_cudaFree(args[4]);
 
 	return res;
 }

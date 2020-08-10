@@ -2,7 +2,6 @@
 
 #define BENCH_PROTO(name)	int name(dim3 dimGrid, dim3 dimBlock, void *args[])
 #define BENCHMARK(base)		BENCH_PROTO(bench_##base);
-#define BENCH_COOKARG(name)	int cookarg_##name(dim3 dimGrid, dim3 dimBlock, void *args[]);
 
 BENCHMARK(loopcalc)
 BENCHMARK(mklc)
@@ -12,9 +11,6 @@ BENCHMARK(kmeans)
 BENCHMARK(mandelbrot)
 BENCHMARK(irregular)
 BENCHMARK(mm)
-BENCH_COOKARG(gma)
-BENCH_COOKARG(lma)
-BENCH_COOKARG(kmeans)
 
 benchrun_t	*benchruns;
 int	n_benches;
@@ -23,15 +19,15 @@ int	n_tbs_submitted;
 int	n_mtbs_submitted;
 
 static benchinfo_t	benchinfos[] = {
-	{ "lc", LOOPCALC, NULL, bench_loopcalc },
-	{ "mklc", MKLC, NULL, bench_mklc },
-	{ "gma", GMA, cookarg_gma, bench_gma },
-	{ "lma", LMA, cookarg_lma, bench_lma },
-	{ "kmeans", KMEANS, cookarg_kmeans, bench_kmeans },
-	{ "mb", MANDELBROT, NULL, bench_mandelbrot },
-	{ "irr", IRREGULAR, NULL, bench_irregular },
-	{ "mm", MM, NULL, bench_mm },
-	{ NULL, 0, NULL, NULL }
+	{ "lc", LOOPCALC, bench_loopcalc },
+	{ "mklc", MKLC, bench_mklc },
+	{ "gma", GMA, bench_gma },
+	{ "lma", LMA, bench_lma },
+	{ "kmeans", KMEANS, bench_kmeans },
+	{ "mb", MANDELBROT, bench_mandelbrot },
+	{ "irr", IRREGULAR, bench_irregular },
+	{ "mm", MM, bench_mm },
+	{ NULL, 0, NULL }
 };
 
 static benchinfo_t *
@@ -130,12 +126,6 @@ add_bench(unsigned runcount, const char *code, const char *args)
 		brun->info = info;
 		if (!parse_args(args, brun))
 			return FALSE;
-		if (info->cookarg_func != NULL) {
-			if (info->cookarg_func(brun->dimGrid, brun->dimBlock, brun->args) < 0) {
-				error("failed to cook arguments");
-				return FALSE;
-			}
-		}
 		n_tbs = brun->dimGrid.x * brun->dimGrid.y;
 		n_tbs_submitted += n_tbs;
 		n_mtbs_submitted += (n_tbs * (brun->dimBlock.x * brun->dimBlock.y / N_THREADS_PER_mTB));
