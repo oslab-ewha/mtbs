@@ -26,9 +26,8 @@ create_fedkern_info(void)
 	fkinfo->going_to_shutdown = FALSE;
 	fkinfo->tbs_type = sched->type;
 	fkinfo->n_sm_count = n_sm_count;
-	fkinfo->n_mtbs = n_mtbs_submitted;
-	fkinfo->n_max_mtbs_per_sm = n_max_mtbs_per_sm;
-	fkinfo->n_max_mtbs_per_MTB = n_max_mtbs_per_sm / n_MTBs_per_sm;
+	fkinfo->n_MTBs_per_sm = n_MTBs_per_sm;
+	fkinfo->n_mtbs_per_MTB = n_max_mtbs_per_sm / n_MTBs_per_sm;
 	fkinfo->n_queued_kernels = n_queued_kernels;
 
 	g_fkinfo = (fedkern_info_t *)mtbs_cudaMalloc(sizeof(fedkern_info_t));

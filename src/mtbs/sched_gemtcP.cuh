@@ -1,7 +1,7 @@
 #include "tbs_sd.h"
 
-#define SKRID_MY()	skrid_offs[d_fkinfo->n_max_mtbs_per_MTB * blockIdx.y + threadIdx.x / N_THREADS_PER_mTB].skrid
-#define OFFSET_MY()	skrid_offs[d_fkinfo->n_max_mtbs_per_MTB * blockIdx.y + threadIdx.x / N_THREADS_PER_mTB].offset
+#define SKRID_MY()	skrid_offs[d_fkinfo->n_mtbs_per_MTB * blockIdx.y + threadIdx.x / N_THREADS_PER_mTB].skrid
+#define OFFSET_MY()	skrid_offs[d_fkinfo->n_mtbs_per_MTB * blockIdx.y + threadIdx.x / N_THREADS_PER_mTB].offset
 
 static __device__ BOOL	*d_mtbs_done;
 

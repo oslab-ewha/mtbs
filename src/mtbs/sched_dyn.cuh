@@ -2,11 +2,11 @@
 
 #define EPOCH_MAX	64
 
-#define mTB_TOTAL_COUNT()      (d_fkinfo->n_max_mtbs_per_sm * d_fkinfo->n_sm_count)
+#define mTB_TOTAL_COUNT()      (dn_mtbs_per_sm * d_fkinfo->n_sm_count)
 #define SKR_N_TBS_SCHED(skrid) skr_n_tbs_sched[skrid - 1]
 
-#define mTB_INDEX(id_sm, idx)  ((id_sm - 1) * d_fkinfo->n_max_mtbs_per_sm + idx)
-#define mTB_INDEX_MY(id_sm)    ((id_sm - 1) * d_fkinfo->n_max_mtbs_per_sm + d_fkinfo->n_max_mtbs_per_MTB * blockIdx.y + (threadIdx.x / N_THREADS_PER_mTB) + 1)
+#define mTB_INDEX(id_sm, idx)  ((id_sm - 1) * dn_mtbs_per_sm + idx)
+#define mTB_INDEX_MY(id_sm)    ((id_sm - 1) * dn_mtbs_per_sm + d_fkinfo->n_mtbs_per_MTB * blockIdx.y + (threadIdx.x / N_THREADS_PER_mTB) + 1)
 
 #define EPOCH(id_sm, idx)      mtb_epochs[mTB_INDEX(id_sm, idx) - 1]
 #define EPOCH_MY(id_sm)                mtb_epochs[mTB_INDEX_MY(id_sm) - 1]
@@ -32,10 +32,7 @@ __device__ static volatile unsigned	*skr_n_tbs_sched;
 
 __device__ static volatile unsigned	cur_skr_idx;
 
-__device__ unsigned cu_get_tb_sm_rr(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start);
-__device__ unsigned cu_get_tb_sm_rrf(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start);
-__device__ unsigned cu_get_tb_sm_fca(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start);
-__device__ unsigned cu_get_tb_sm_rrm(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start);
+__device__ unsigned cu_get_tb_sm_rr(unsigned n_mtbs, unsigned *pidx_mtb_start);
 
 /* epoch directory for mTB allocation table */
 __device__ volatile unsigned short	*mATs;
@@ -48,6 +45,8 @@ __device__ volatile unsigned short	*mSTs;
 
 static __device__ BOOL	*d_mtbs_done;
 static __device__ unsigned	*d_mtbs_done_cnts;
+
+static __device__ unsigned	dn_mtbs_per_sm;
 
 static __device__ int
 lock_scheduling(void)
@@ -97,7 +96,7 @@ assign_tb(void)
 
 	skr = &d_skruns[skrid - 1];
 
-	id_sm_sched = cu_get_tb_sm_rr(d_fkinfo, skr->n_mtbs_per_tb, &idx_mtb_start);
+	id_sm_sched = cu_get_tb_sm_rr(skr->n_mtbs_per_tb, &idx_mtb_start);
 
 	if (id_sm_sched == 0)
 		return FALSE;
@@ -137,11 +136,11 @@ find_mtb_start(unsigned id_sm, unsigned idx_mtb_start, unsigned n_mtbs)
 {
 	int	i;
 
-	for (i = idx_mtb_start; i <= d_fkinfo->n_max_mtbs_per_sm; i++) {
+	for (i = idx_mtb_start; i <= dn_mtbs_per_sm; i++) {
 		if (SKRID(id_sm, i) == 0) {
 			if (n_mtbs == 1)
 				return i;
-			if (i + n_mtbs - 1 <= d_fkinfo->n_max_mtbs_per_sm) {
+			if (i + n_mtbs - 1 <= dn_mtbs_per_sm) {
 				int	j;
 				for (j = 1; j < n_mtbs; j++) {
 					if (SKRID(id_sm, i + j) != 0)
@@ -161,7 +160,7 @@ get_n_active_mtbs(unsigned id_sm)
 	unsigned	count = 0;
 	int	i;
 
-	for (i = 1; i <= d_fkinfo->n_max_mtbs_per_sm; i++) {
+	for (i = 1; i <= dn_mtbs_per_sm; i++) {
 		if (SKRID(id_sm, i) != 0)
 			count++;
 	}
@@ -274,6 +273,7 @@ setup_sched_dyn(unsigned short *g_mATs, unsigned char *g_mtb_epochs, skrun_t *sk
 	int	size;
 	int	i;
 
+	dn_mtbs_per_sm = d_fkinfo->n_mtbs_per_MTB * d_fkinfo->n_MTBs_per_sm;
 	size = EPOCH_MAX * mTB_TOTAL_COUNT();
 
 	mOTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));

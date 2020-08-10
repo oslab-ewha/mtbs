@@ -1,12 +1,10 @@
 #include "tbs_sd.h"
 
-#define mTB_TOTAL_COUNT()	(d_fkinfo->n_max_mtbs_per_sm * d_fkinfo->n_sm_count)
-
-#define mTB_INDEX_MY(id_sm)	((id_sm - 1) * d_fkinfo->n_max_mtbs_per_sm + d_fkinfo->n_max_mtbs_per_MTB * blockIdx.y + (threadIdx.x / N_THREADS_PER_mTB) + 1)
+#define mTB_INDEX_MY(id_sm)	((id_sm - 1) * dn_mtbs_per_sm + d_fkinfo->n_mtbs_per_MTB * blockIdx.y + (threadIdx.x / N_THREADS_PER_mTB) + 1)
 
 #define EPOCH_MY(id_sm)		mtb_epochs[mTB_INDEX_MY(id_sm) - 1]
 
-#define mTB_ALLOCOFF_TABLE_MY(id_sm)	(mAOTs + mTB_TOTAL_COUNT() * EPOCH_MY(id_sm))
+#define mTB_ALLOCOFF_TABLE_MY(id_sm)	(mAOTs + dn_mtbs * EPOCH_MY(id_sm))
 
 #define SKRID_MY(id_sm)		mTB_ALLOCOFF_TABLE_MY(id_sm)[mTB_INDEX_MY(id_sm) - 1].skrid
 #define mTB_OFFSET_TB_MY(id_sm)		mTB_ALLOCOFF_TABLE_MY(id_sm)[mTB_INDEX_MY(id_sm) - 1].offset
@@ -20,6 +18,9 @@ static __device__ volatile unsigned short	*mSTs;
 
 static __device__ BOOL	*d_mtbs_done;
 static __device__ unsigned	*d_mtbs_done_cnts;
+
+static __device__ unsigned	dn_mtbs;
+static __device__ unsigned	dn_mtbs_per_sm;
 
 static __device__ skrid_t
 get_skrid_static(void)
@@ -105,7 +106,10 @@ func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs, skrun_t *skr
 	int	size;
 	int	i;
 
-	size = EPOCH_MAX * mTB_TOTAL_COUNT();
+	dn_mtbs_per_sm = d_fkinfo->n_mtbs_per_MTB * d_fkinfo->n_MTBs_per_sm;
+	dn_mtbs = dn_mtbs_per_sm * d_fkinfo->n_sm_count;
+
+	size = EPOCH_MAX * dn_mtbs;
 
 	mSTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
 	if (mSTs == NULL) {
@@ -132,7 +136,7 @@ func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs, skrun_t *skr
 		mSTs[i] = 0;
 	}
 
-	for (i = 0; i < mTB_TOTAL_COUNT(); i++) {
+	for (i = 0; i < dn_mtbs; i++) {
 		mtb_epochs[i] = 0;
 	}
 

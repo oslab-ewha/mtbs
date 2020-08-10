@@ -1,9 +1,10 @@
 #include "mtbs_cu.h"
+#include "tbs_sd.h"
 
 static __device__ volatile unsigned	id_sm = 1;
 
 __device__ unsigned
-cu_get_tb_sm_rr(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_start)
+cu_get_tb_sm_rr(unsigned n_mtbs, unsigned *pidx_mtb_start)
 {
 	unsigned	id_sm_start = id_sm;
 	int	id_sm_cur = id_sm;
@@ -14,15 +15,15 @@ cu_get_tb_sm_rr(fedkern_info_t *fkinfo, unsigned n_mtbs, unsigned *pidx_mtb_star
 		mtb_start = find_mtb_start(id_sm_cur, 1, n_mtbs);
 
 		if (mtb_start > 0) {
-			id_sm = (id_sm_cur + 1) % fkinfo->n_sm_count;
+			id_sm = (id_sm_cur + 1) % d_fkinfo->n_sm_count;
 			if (id_sm == 0)
-				id_sm = fkinfo->n_sm_count;
+				id_sm = d_fkinfo->n_sm_count;
 			*pidx_mtb_start = mtb_start;
 			return id_sm_cur;
 		}
-		id_sm_cur = (id_sm_cur + 1) % fkinfo->n_sm_count;
+		id_sm_cur = (id_sm_cur + 1) % d_fkinfo->n_sm_count;
 		if (id_sm_cur == 0)
-			id_sm_cur = fkinfo->n_sm_count;
+			id_sm_cur = d_fkinfo->n_sm_count;
 	}
 	while (id_sm_start != id_sm_cur);
 

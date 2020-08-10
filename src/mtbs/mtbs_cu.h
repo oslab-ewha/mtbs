@@ -53,9 +53,8 @@ typedef struct {
 	BOOL		sched_done, going_to_shutdown;
 	tbs_type_t	tbs_type;
 	unsigned	n_sm_count;
-	unsigned	n_max_mtbs_per_sm;
-	unsigned	n_max_mtbs_per_MTB;
-	unsigned	n_mtbs;
+	unsigned	n_MTBs_per_sm;
+	unsigned	n_mtbs_per_MTB;
 	unsigned	n_queued_kernels;
 } fedkern_info_t;
 
