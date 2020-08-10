@@ -265,6 +265,7 @@ set_mtbs_skrid(sched_ctx_t *pctx, unsigned id_sm, unsigned short offbase, unsign
 		n_mtbs_cur++;
 		if (n_mtbs_cur == n_mtbs)
 			return;
+		off++;
 	}
 }
 
