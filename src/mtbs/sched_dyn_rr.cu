@@ -12,7 +12,7 @@ cu_get_tb_sm_rr(unsigned n_mtbs, unsigned *pidx_mtb_start)
 	do {
 		int	mtb_start;
 
-		mtb_start = find_mtb_start(id_sm_cur, 1, n_mtbs);
+		mtb_start = find_mtb_start(id_sm_cur, n_mtbs);
 
 		if (mtb_start > 0) {
 			id_sm = (id_sm_cur + 1) % d_fkinfo->n_sm_count;

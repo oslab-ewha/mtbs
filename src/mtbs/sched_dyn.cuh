@@ -132,22 +132,26 @@ run_schedule_in_kernel(void)
 }
 
 __device__ unsigned
-find_mtb_start(unsigned id_sm, unsigned idx_mtb_start, unsigned n_mtbs)
+find_mtb_start(unsigned id_sm, unsigned n_mtbs)
 {
-	int	i;
+	int	i, j;
+	unsigned	idx = 1;
 
-	for (i = idx_mtb_start; i <= dn_mtbs_per_sm; i++) {
-		if (SKRID(id_sm, i) == 0) {
-			if (n_mtbs == 1)
-				return i;
-			if (i + n_mtbs - 1 <= dn_mtbs_per_sm) {
-				int	j;
-				for (j = 1; j < n_mtbs; j++) {
-					if (SKRID(id_sm, i + j) != 0)
-						break;
+	for (j = 0; j < d_fkinfo->n_MTBs_per_sm; j++) {
+		for (i = 0; i < d_fkinfo->n_mtbs_per_MTB; i++, idx++) {
+			if (SKRID(id_sm, idx) == 0) {
+				if (n_mtbs == 1)
+					return idx;
+				if (((idx - 1) % d_fkinfo->n_mtbs_per_MTB) + n_mtbs <= d_fkinfo->n_mtbs_per_MTB) {
+					int	k;
+					for (k = 1; k < n_mtbs; k++) {
+						if (SKRID(id_sm, idx + k) != 0)
+							break;
+					}
+					if (k == n_mtbs) {
+						return idx;
+					}
 				}
-				if (j == n_mtbs)
-					return i;
 			}
 		}
 	}

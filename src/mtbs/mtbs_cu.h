@@ -93,7 +93,7 @@ extern void wait_benchruns(void);
 __device__ uint get_smid(void);
 __device__ uint get_laneid(void);
 __device__ void sleep_in_kernel(void);
-__device__ unsigned find_mtb_start(unsigned id_sm, unsigned idx_mtb_start, unsigned n_mtbs);
+__device__ unsigned find_mtb_start(unsigned id_sm, unsigned n_mtbs);
 __device__ unsigned get_n_active_mtbs(unsigned id_sm);
 
 BOOL invoke_kernel_func(const char *funcname, void **params);
