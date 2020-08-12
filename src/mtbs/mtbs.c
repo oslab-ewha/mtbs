@@ -31,6 +31,7 @@ usage(void)
 "  mb: mandelbrot\n"
 "  irr: irregular task(in-house)\n"
 "  mm: matrix multiplication\n"
+"  syncsum: for sync_threads() test\n"
 " <arg string>:\n"
 "   NOTE: First 4 arguments are <grid width>,<grid height>,<tb width>,<tb height>\n"
 "   lc: <calculation type>,<iterations>,<# iterations for calculation type greater than 3>\n"

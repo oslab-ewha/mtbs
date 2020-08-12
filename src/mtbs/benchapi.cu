@@ -132,6 +132,18 @@ sync_threads(void)
 		__syncthreads();
 		return;
 	}
+	else {
+		skrun_t	*skr = benchapi_funcs.get_skr();
 
-	benchapi_funcs.sync_TB_threads();
+		if (skr->n_mtbs_per_tb > 1) {
+			unsigned	barid = benchapi_funcs.get_barid(skr);
+			unsigned	n_threads;
+
+			n_threads = skr->n_mtbs_per_tb * N_THREADS_PER_mTB;
+			asm("bar.sync %0, %1;"::"r"(barid), "r"(n_threads));
+		}
+		else {
+			SYNCWARP();
+		}
+	}
 }

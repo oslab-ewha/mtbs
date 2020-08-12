@@ -1,1 +1,1 @@
-SUBDIRS = loopcalc mklc gma lma irregular
+SUBDIRS = loopcalc mklc gma lma irregular syncsum

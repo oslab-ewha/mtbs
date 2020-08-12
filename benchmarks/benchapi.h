@@ -9,6 +9,7 @@
 #define MANDELBROT	((skid_t)6)
 #define IRREGULAR	((skid_t)7)
 #define MM		((skid_t)8)
+#define SYNCSUM		((skid_t)9)
 
 typedef unsigned char	skid_t;
 typedef void *	sk_t;

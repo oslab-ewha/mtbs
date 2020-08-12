@@ -21,6 +21,7 @@ SK_FUNCS(kmeans)
 SK_FUNCS(mandelbrot)
 SK_FUNCS(irregular)
 SK_FUNCS(mm)
+SK_FUNCS(syncsum)
 
 static __device__ int
 run_sub_kernel_func(skid_t skid, void *args[])
@@ -42,6 +43,8 @@ run_sub_kernel_func(skid_t skid, void *args[])
 		return irregular(args);
 	case MM:
 		return mm(args);
+	case SYNCSUM:
+		return syncsum(args);
 	default:
 		return 0;
 	}

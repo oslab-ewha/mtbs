@@ -30,6 +30,7 @@ mtbs_LDADD = ../../benchmarks/inhouse/loopcalc/libloopcalc.a \
 		../../benchmarks/mandelbrot/libmandelbrot.a \
 		../../benchmarks/mm/libmm.a \
 		../../benchmarks/inhouse/irregular/libirregular.a \
+		../../benchmarks/inhouse/syncsum/libsyncsum.a \
 		-lcuda -lcudart
 
 include $(top_srcdir)/makefile.cu

@@ -11,6 +11,7 @@ BENCHMARK(kmeans)
 BENCHMARK(mandelbrot)
 BENCHMARK(irregular)
 BENCHMARK(mm)
+BENCHMARK(syncsum)
 
 benchrun_t	*benchruns;
 int	n_benches;
@@ -27,6 +28,7 @@ static benchinfo_t	benchinfos[] = {
 	{ "mb", MANDELBROT, bench_mandelbrot },
 	{ "irr", IRREGULAR, bench_irregular },
 	{ "mm", MM, bench_mm },
+	{ "syncsum", SYNCSUM, bench_syncsum },
 	{ NULL, 0, NULL }
 };
 

@@ -17,7 +17,7 @@ extern __device__ fedkern_info_t	*d_fkinfo;
 typedef struct {
 	skrun_t *(*get_skr)(void);
 	unsigned short (*get_offset_TB)(void);
-	void (*sync_TB_threads)(void);
+	unsigned (*get_barid)(skrun_t *skr);
 } benchapi_funcs_t;
 
 extern __device__ benchapi_funcs_t	benchapi_funcs;

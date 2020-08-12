@@ -22,9 +22,6 @@
 #define mTB_OFFSET_TB(id_sm, idx)      mTB_OFFSET_TABLE(id_sm, idx)[mTB_INDEX(id_sm, idx) - 1]
 #define mTB_OFFSET_TB_MY(id_sm)                mTB_OFFSET_TABLE_MY(id_sm)[mTB_INDEX_MY(id_sm) - 1]
 
-#define mTB_SYNC_TABLE(id_sm, idx)    (mSTs + mTB_TOTAL_COUNT() * EPOCH(id_sm, idx))
-#define mTB_SYNC(id_sm, idx)   mTB_SYNC_TABLE(id_sm, idx)[mTB_INDEX(id_sm, idx) - 1]
-
 __device__ static volatile int	in_scheduling;
 
 /* number of scheduled mtbs per skr */
@@ -40,8 +37,6 @@ __device__ volatile unsigned char	*mtb_epochs;
 
 /* offset in TB per mTB */
 __device__ volatile unsigned short	*mOTs;
-/* sync counter per mTB */
-__device__ volatile unsigned short	*mSTs;
 
 static __device__ BOOL	*d_mtbs_done;
 static __device__ unsigned	*d_mtbs_done_cnts;
@@ -71,7 +66,7 @@ get_sched_skrid(void)
 		skrun_t	*skr = &d_skruns[cur_skr_idx];
 		skid_t	skid;
 		skid = *(volatile skid_t *)(&skr->skid);
-		if (skid != 0)
+		if (skid != 0 && *(volatile unsigned *)&skr->n_mtbs_per_tb > 0)
 			return cur_skr_idx + 1;
 		if (*(volatile BOOL *)&d_fkinfo->sched_done)
 			return 0;
@@ -105,7 +100,6 @@ assign_tb(void)
 	for (i = 0; i < skr->n_mtbs_per_tb; i++) {
 		SKRID(id_sm_sched, idx_mtb_start + i) = skrid;
 		mTB_OFFSET_TB(id_sm_sched, idx_mtb_start + i) = off_tb_base + i;
-		mTB_SYNC(id_sm_sched, idx_mtb_start + i) = 0;
 	}
 	SKR_N_TBS_SCHED(skrid)++;
 	if (SKR_N_TBS_SCHED(skrid) == skr->n_tbs) {
@@ -188,24 +182,12 @@ get_offset_TB_dyn(void)
 	return mTB_OFFSET_TB_MY(id_sm);
 }
 
-__device__ void
-sync_TB_threads_dyn(void)
+static __device__ unsigned
+get_barid_dyn(skrun_t *skr)
 {
-	if (IS_LEADER_THREAD()) {
-		skrun_t	*skr = get_skr_dyn();
+	unsigned	id_sm = get_smid() + 1;
 
-		if (skr->n_mtbs_per_tb > 1) {
-			unsigned	id_sm = get_smid() + 1;
-			unsigned	offset = get_offset_TB_dyn();
-			int		idx_sync = mTB_INDEX_MY(id_sm) - offset;
-
-			atomicInc((unsigned *)&mTB_SYNC(id_sm, idx_sync), skr->n_mtbs_per_tb - 1);
-			while (mTB_SYNC(id_sm, idx_sync) > 0) {
-				printf("%d\n", mTB_SYNC(id_sm, idx_sync));
-			}
-		}
-	}
-	SYNCWARP();
+	return (threadIdx.x / N_THREADS_PER_mTB - mTB_OFFSET_TB_MY(id_sm) % skr->n_mtbs_per_tb) / skr->n_mtbs_per_tb;
 }
 
 static __device__ skrid_t
@@ -281,8 +263,7 @@ setup_sched_dyn(unsigned short *g_mATs, unsigned char *g_mtb_epochs, skrun_t *sk
 	size = EPOCH_MAX * mTB_TOTAL_COUNT();
 
 	mOTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
-	mSTs = (volatile unsigned short *)malloc(size * sizeof(unsigned short));
-	if (mOTs == NULL || mSTs == NULL) {
+	if (mOTs == NULL) {
 		printf("out of memory: offset or sync table cannot be allocated\n");
 		d_fkinfo->going_to_shutdown = TRUE;
 		return;
@@ -303,7 +284,6 @@ setup_sched_dyn(unsigned short *g_mATs, unsigned char *g_mtb_epochs, skrun_t *sk
 	for (i = 0; i < size; i++) {
 		mATs[i] = 0;
 		mOTs[i] = 0;
-		mSTs[i] = 0;
 	}
 
 	for (i = 0; i < mTB_TOTAL_COUNT(); i++) {
@@ -317,5 +297,5 @@ setup_sched_dyn(unsigned short *g_mATs, unsigned char *g_mtb_epochs, skrun_t *sk
 
 	benchapi_funcs.get_skr = get_skr_dyn;
 	benchapi_funcs.get_offset_TB = get_offset_TB_dyn;
-	benchapi_funcs.sync_TB_threads = sync_TB_threads_dyn;
+	benchapi_funcs.get_barid = get_barid_dyn;
 }
