@@ -31,6 +31,9 @@ sleep_in_kernel(void)
 {
 #if CUDA_COMPUTE >= 70
 	asm("nanosleep.u32 1;");
+#else
+	static __device__ volatile int		dummy;
+	dummy++;
 #endif
 }
 
