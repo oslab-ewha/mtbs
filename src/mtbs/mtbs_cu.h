@@ -20,6 +20,7 @@ extern int	n_mtbs_submitted;
 
 extern unsigned		n_max_mtbs;
 extern unsigned		n_max_mtbs_per_sm;
+extern unsigned		n_mtbs_per_MTB;
 
 extern unsigned		n_queued_kernels;
 

@@ -82,6 +82,14 @@ get_offset_TB_static(void)
 	return mTB_OFFSET_TB_MY(id_sm);
 }
 
+static __device__ unsigned
+get_barid_static(skrun_t *skr)
+{
+	unsigned	id_sm = get_smid() + 1;
+
+	return (threadIdx.x / N_THREADS_PER_mTB - mTB_OFFSET_TB_MY(id_sm) % skr->n_mtbs_per_tb) / skr->n_mtbs_per_tb;
+}
+
 extern "C" __global__ void
 func_macro_TB_static(void)
 {
@@ -142,4 +150,5 @@ func_init_skrun_static(mAO_t *g_mAOTs, unsigned char *g_mtb_epochs, skrun_t *skr
 
 	benchapi_funcs.get_skr = get_skr_static;
 	benchapi_funcs.get_offset_TB = get_offset_TB_static;
+	benchapi_funcs.get_barid = get_barid_static;
 }

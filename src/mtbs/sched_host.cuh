@@ -79,6 +79,14 @@ get_offset_TB_host(void)
 	return OFFSET_MY();
 }
 
+static __device__ unsigned
+get_barid_host(skrun_t *skr)
+{
+	unsigned	id_sm = get_smid() + 1;
+
+	return (threadIdx.x / N_THREADS_PER_mTB - OFFSET_MY() % skr->n_mtbs_per_tb) / skr->n_mtbs_per_tb;
+}
+
 extern "C" __global__ void
 func_macro_TB_host(void)
 {
@@ -142,4 +150,5 @@ func_init_skrun_host(unsigned short *g_mATs, unsigned char *g_mtb_epochs, skrun_
 
 	benchapi_funcs.get_skr = get_skr_host;
 	benchapi_funcs.get_offset_TB = get_offset_TB_host;
+	benchapi_funcs.get_barid = get_barid_host;
 }

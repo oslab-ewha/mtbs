@@ -41,14 +41,11 @@ static pthread_mutex_t	mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t	cond = PTHREAD_COND_INITIALIZER;
 
 #define NEXT_EPOCH(epoch)		(((epoch) + 1)  % EPOCH_MAX)
-#define mTB_INDEX_HOST(id_sm, idx)	((id_sm - 1) * n_max_mtbs_per_sm + idx)
-#define EPOCH_HOST(id_sm, idx)		mtb_epochs_host[mTB_INDEX_HOST(id_sm, idx) - 1]
-#define EPOCH_HOST_ALLOC(id_sm, idx)	mtb_epochs_host_alloc[mTB_INDEX_HOST(id_sm, idx) - 1]
+#define mTB_INDEX_HOST(idx_sm, idx_MTB, idx)	((idx_sm) * n_max_mtbs_per_sm + (idx_MTB) * n_mtbs_per_MTB + idx)
+#define EPOCH_HOST(idx_sm, idx_MTB, idx)		mtb_epochs_host[mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1]
+#define EPOCH_HOST_ALLOC(idx_sm, idx_MTB, idx)		mtb_epochs_host_alloc[mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1]
 #define mTB_ALLOC_TABLE_EPOCH_HOST(cinfo, epoch)	((cinfo)->mATs_host + n_max_mtbs * (epoch))
-#define SKRID_EPOCH_HOST(cinfo, epoch, id_sm, idx)	(mTB_ALLOC_TABLE_EPOCH_HOST(cinfo, epoch)[mTB_INDEX_HOST(id_sm, idx) - 1])
-
-#define SET_ID_SM_NEXT(id_sm)	do { (id_sm) = (id_sm + 1) % n_sm_count; \
-		if ((id_sm) == 0) (id_sm) = n_sm_count; } while (0)
+#define SKRID_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx)	(mTB_ALLOC_TABLE_EPOCH_HOST(cinfo, epoch)[mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1])
 
 static skrun_t	*g_skruns;
 static BOOL	*g_mtbs_done;
@@ -72,66 +69,67 @@ typedef struct {
 } sched_sm_t;
 
 static sched_sm_t	*sched_sms;
-static unsigned	id_sm_last = 1;
+static unsigned	idx_ssm_last;
 
-static unsigned
-lock_sm(void)
+static void
+lock_sm(unsigned *pidx_sm, unsigned *pidx_MTB)
 {
-	unsigned	id_sm_cur = 0, id_sm_start;
+	unsigned	idx_ssm_cur = 0, idx_ssm_start;
+	unsigned	n_MTBs = n_sm_count * n_MTBs_per_sm;
 
 	pthread_spin_lock(&lock);
 
-	id_sm_start = id_sm_last;
+	idx_ssm_start = idx_ssm_last;
 
 	while (TRUE) {
-		if (!sched_sms[id_sm_last - 1].locked) {
-			sched_sms[id_sm_last - 1].locked = TRUE;
-			id_sm_cur = id_sm_last;
-			SET_ID_SM_NEXT(id_sm_last);
+		if (!sched_sms[idx_ssm_last].locked) {
+			sched_sms[idx_ssm_last].locked = TRUE;
+			idx_ssm_cur = idx_ssm_last;
+			idx_ssm_last = (idx_ssm_last + 1) % n_MTBs;
 			break;
 		}
-		SET_ID_SM_NEXT(id_sm_last);
-		if (id_sm_last == id_sm_start) {
+		idx_ssm_last = (idx_ssm_last + 1) % n_MTBs;
+		if (idx_ssm_last == idx_ssm_start) {
 			pthread_spin_unlock(&lock);
 			usleep(1);
 			pthread_spin_lock(&lock);
 		}
 	}
 	pthread_spin_unlock(&lock);
-
-	return id_sm_cur;
+	*pidx_sm = idx_ssm_cur % n_sm_count;
+	*pidx_MTB = idx_ssm_cur / n_sm_count;
 }
 
 static void
-unlock_sm(unsigned id_sm)
+unlock_sm(unsigned idx_sm, unsigned idx_MTB)
 {
 	pthread_spin_lock(&lock);
-	sched_sms[id_sm - 1].locked = FALSE;
+	sched_sms[idx_MTB * n_sm_count + idx_sm].locked = FALSE;
 	pthread_spin_unlock(&lock);
 }
 
 static BOOL
-find_mtbs_on_sm(unsigned id_sm, unsigned n_mtbs, unsigned char *epochs)
+find_mtbs_on_sm(unsigned idx_sm, unsigned idx_MTB, unsigned n_mtbs, unsigned char *epochs)
 {
-	sched_sm_t	*ssm = &sched_sms[id_sm - 1];
+	sched_sm_t	*ssm = &sched_sms[idx_sm];
 	unsigned	n_mtbs_cur = 0;
 	unsigned	idx, idx_start;
 
 	idx = idx_start = ssm->idx_last;
 
 	do {
-		int	epoch = EPOCH_HOST(id_sm, idx + 1);
-		int	epoch_alloc = EPOCH_HOST_ALLOC(id_sm, idx + 1);
+		int	epoch = EPOCH_HOST(idx_sm, idx_MTB, idx + 1);
+		int	epoch_alloc = EPOCH_HOST_ALLOC(idx_sm, idx_MTB, idx + 1);
 
 		/* Next epoch entry should be set to zero to proect overrun */
 		if (NEXT_EPOCH(NEXT_EPOCH(epoch_alloc)) == epoch) {
-			idx = (idx + 1) % n_max_mtbs_per_sm;
+			idx = (idx + 1) % n_mtbs_per_MTB;
 			continue;
 		}
 
 		epochs[idx] = epoch_alloc;
 		n_mtbs_cur++;
-		idx = (idx + 1) % n_max_mtbs_per_sm;
+		idx = (idx + 1) % n_mtbs_per_MTB;
 
 		if (n_mtbs_cur == n_mtbs) {
 			ssm->idx_last = idx;
@@ -184,7 +182,7 @@ get_sibling_upranges(htod_copyinfo_t *cinfo, unsigned up_idx, uprange_t **pprev,
 }
 
 static void
-apply_mAT_uprange(unsigned char epoch, unsigned id_sm, unsigned idx, skrid_t skrid)
+apply_mAT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsigned idx, skrid_t skrid)
 {
 	htod_copyinfo_t	*cinfo;
 	unsigned	up_idx;
@@ -192,11 +190,11 @@ apply_mAT_uprange(unsigned char epoch, unsigned id_sm, unsigned idx, skrid_t skr
 	uprange_t	*prev, *next;
 
 	pthread_spin_lock(&lock);
-	up_idx = n_max_mtbs * epoch + mTB_INDEX_HOST(id_sm, idx) - 1;
+	up_idx = n_max_mtbs * epoch + mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1;
 
 	cinfo = copyinfos + COPYIDX_OTHER();
 
-	SKRID_EPOCH_HOST(cinfo, epoch, id_sm, idx) = skrid;
+	SKRID_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx) = skrid;
 
 	if (!get_sibling_upranges(cinfo, up_idx, &prev, &next)) {
 		pthread_spin_unlock(&lock);
@@ -239,20 +237,20 @@ apply_mAT_uprange(unsigned char epoch, unsigned id_sm, unsigned idx, skrid_t skr
 }
 
 static void
-set_mtbs_skrid(sched_ctx_t *pctx, unsigned id_sm, unsigned n_mtbs, unsigned char *epochs)
+set_mtbs_skrid(sched_ctx_t *pctx, unsigned idx_sm, unsigned idx_MTB, unsigned n_mtbs, unsigned char *epochs)
 {
 	unsigned	n_mtbs_cur = 0;
 	unsigned	i;
 
-	for (i = 1; i <= n_max_mtbs_per_sm; i++) {
+	for (i = 1; i <= n_mtbs_per_MTB; i++) {
 		unsigned char	epoch = epochs[i - 1];
 
 		if (epoch == EPOCH_MAX)
 			continue;
 
-		apply_mAT_uprange(epoch, id_sm, i, pctx->skrid);
-		apply_mAT_uprange(NEXT_EPOCH(epoch), id_sm, i, 0);
-		EPOCH_HOST_ALLOC(id_sm, i) = NEXT_EPOCH(epoch);
+		apply_mAT_uprange(epoch, idx_sm, idx_MTB, i, pctx->skrid);
+		apply_mAT_uprange(NEXT_EPOCH(epoch), idx_sm, idx_MTB, i, 0);
+		EPOCH_HOST_ALLOC(idx_sm, idx_MTB, i) = NEXT_EPOCH(epoch);
 		n_mtbs_cur++;
 		if (n_mtbs_cur == n_mtbs)
 			return;
@@ -265,16 +263,18 @@ assign_tb_by_rr(sched_ctx_t *pctx, unsigned n_mtbs)
 	unsigned	i;
 
 	for (i = 0; i < n_sm_count; i++) {
-		unsigned	id_sm_cur = lock_sm();
+		unsigned	idx_sm, idx_MTB;
 
-		memset(pctx->epochs, EPOCH_MAX, n_max_mtbs_per_sm);
-		if (find_mtbs_on_sm(id_sm_cur, n_mtbs, pctx->epochs)) {
-			set_mtbs_skrid(pctx, id_sm_cur, n_mtbs, pctx->epochs);
-			unlock_sm(id_sm_cur);
+		lock_sm(&idx_sm, &idx_MTB);
+
+		memset(pctx->epochs, EPOCH_MAX, n_mtbs_per_MTB);
+		if (find_mtbs_on_sm(idx_sm, idx_MTB, n_mtbs, pctx->epochs)) {
+			set_mtbs_skrid(pctx, idx_sm, idx_MTB, n_mtbs, pctx->epochs);
+			unlock_sm(idx_sm, idx_MTB);
 
 			return TRUE;
 		}
-		unlock_sm(id_sm_cur);
+		unlock_sm(idx_sm, idx_MTB);
 	}
 
 	return FALSE;
@@ -301,7 +301,7 @@ static void
 init_sched_ctx(sched_ctx_t *pctx, skrid_t skrid)
 {
 	pctx->skrid = skrid;
-	pctx->epochs = (unsigned char *)malloc(n_max_mtbs_per_sm);
+	pctx->epochs = (unsigned char *)malloc(n_mtbs_per_MTB);
 }
 
 static void
@@ -510,7 +510,7 @@ init_skrun_host(void)
 		memset(copyinfos[i].mATs_host, 0, sizeof(unsigned short) * n_max_mtbs * EPOCH_MAX);
 	}
 	pthread_spin_init(&lock, 0);
-	sched_sms = (sched_sm_t *)calloc(n_sm_count, sizeof(sched_sm_t));
+	sched_sms = (sched_sm_t *)calloc(n_sm_count * n_MTBs_per_sm, sizeof(sched_sm_t));
 
 	pthread_create(&host_scheduler, NULL, htod_copycat_func, NULL);
 }
