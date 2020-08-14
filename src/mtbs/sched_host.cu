@@ -5,6 +5,11 @@
 
 #define EPOCH_MAX	64
 
+typedef struct {
+	unsigned short	skrid;
+	unsigned short	offset;
+} mAO_t;
+
 static pthread_t	host_scheduler;
 static BOOL	host_scheduler_done;
 
@@ -22,7 +27,7 @@ typedef struct {
 	unsigned	n_skruns;
 	skrid_t		skrid_start;
 	skrun_t		*skruns;
-	unsigned short	*mATs_host;
+	mAO_t		*mAOTs_host;
 	struct list_head	upranges;
 } htod_copyinfo_t;
 
@@ -44,8 +49,8 @@ static pthread_cond_t	cond = PTHREAD_COND_INITIALIZER;
 #define mTB_INDEX_HOST(idx_sm, idx_MTB, idx)	((idx_sm) * n_max_mtbs_per_sm + (idx_MTB) * n_mtbs_per_MTB + idx)
 #define EPOCH_HOST(idx_sm, idx_MTB, idx)		mtb_epochs_host[mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1]
 #define EPOCH_HOST_ALLOC(idx_sm, idx_MTB, idx)		mtb_epochs_host_alloc[mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1]
-#define mTB_ALLOC_TABLE_EPOCH_HOST(cinfo, epoch)	((cinfo)->mATs_host + n_max_mtbs * (epoch))
-#define SKRID_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx)	(mTB_ALLOC_TABLE_EPOCH_HOST(cinfo, epoch)[mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1])
+#define mTB_ALLOCOFF_TABLE_EPOCH_HOST(cinfo, epoch)	((cinfo)->mAOTs_host + n_max_mtbs * (epoch))
+#define mAO_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx)	(mTB_ALLOCOFF_TABLE_EPOCH_HOST(cinfo, epoch) + mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1)
 
 static skrun_t	*g_skruns;
 static BOOL	*g_mtbs_done;
@@ -58,7 +63,7 @@ static unsigned	cur_skrid_host;
 static BOOL	checker_done;
 static pthread_t	checker;
 
-static unsigned short	*g_mATs;
+static mAO_t		*g_mAOTs;
 extern unsigned char	*g_mtb_epochs;
 
 #include "sched_host.cuh"
@@ -182,19 +187,22 @@ get_sibling_upranges(htod_copyinfo_t *cinfo, unsigned up_idx, uprange_t **pprev,
 }
 
 static void
-apply_mAT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsigned idx, skrid_t skrid)
+apply_mAOT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsigned idx, skrid_t skrid, unsigned short offset)
 {
 	htod_copyinfo_t	*cinfo;
 	unsigned	up_idx;
 	uprange_t	*ur_new;
 	uprange_t	*prev, *next;
+	mAO_t	*mAO;
 
 	pthread_spin_lock(&lock);
 	up_idx = n_max_mtbs * epoch + mTB_INDEX_HOST(idx_sm, idx_MTB, idx) - 1;
 
 	cinfo = copyinfos + COPYIDX_OTHER();
 
-	SKRID_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx) = skrid;
+	mAO = mAO_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx);
+	mAO->skrid = skrid;
+	mAO->offset = offset;
 
 	if (!get_sibling_upranges(cinfo, up_idx, &prev, &next)) {
 		pthread_spin_unlock(&lock);
@@ -240,6 +248,7 @@ static void
 set_mtbs_skrid(sched_ctx_t *pctx, unsigned idx_sm, unsigned idx_MTB, unsigned n_mtbs, unsigned char *epochs)
 {
 	unsigned	n_mtbs_cur = 0;
+	unsigned short	offbase = 0;
 	unsigned	i;
 
 	for (i = 1; i <= n_mtbs_per_MTB; i++) {
@@ -248,12 +257,13 @@ set_mtbs_skrid(sched_ctx_t *pctx, unsigned idx_sm, unsigned idx_MTB, unsigned n_
 		if (epoch == EPOCH_MAX)
 			continue;
 
-		apply_mAT_uprange(epoch, idx_sm, idx_MTB, i, pctx->skrid);
-		apply_mAT_uprange(NEXT_EPOCH(epoch), idx_sm, idx_MTB, i, 0);
+		apply_mAOT_uprange(epoch, idx_sm, idx_MTB, i, pctx->skrid, offbase);
+		apply_mAOT_uprange(NEXT_EPOCH(epoch), idx_sm, idx_MTB, i, 0, (unsigned short)-1);
 		EPOCH_HOST_ALLOC(idx_sm, idx_MTB, i) = NEXT_EPOCH(epoch);
 		n_mtbs_cur++;
 		if (n_mtbs_cur == n_mtbs)
 			return;
+		offbase++;
 	}
 }
 
@@ -311,7 +321,7 @@ fini_sched_ctx(sched_ctx_t *pctx)
 }
 
 static void
-schedule_mtbs(skrid_t skrid, unsigned n_tbs, unsigned n_mtbs_per_tb)
+schedule_mtbs(skrid_t skrid, unsigned n_mtbs_per_tb)
 {
 	sched_ctx_t	ctx;
 
@@ -350,7 +360,7 @@ submit_skrun_host(vstream_t vstream, skrun_t *skr)
 	////TODO
 	skrun_dones[skrid - 1] = FALSE;
 
-	schedule_mtbs(skrid, skr->n_tbs, skr->n_mtbs_per_tb);
+	schedule_mtbs(skrid, skr->n_mtbs_per_tb);
 
 	return (sk_t)(long long)skrid;
 }
@@ -391,7 +401,7 @@ run_copycat(CUstream strm)
 	list_for_each_n (lp, &cinfo->upranges, next) {
 		uprange_t	*ur = list_entry(lp, uprange_t, list);
 
-		cuMemcpyHtoDAsync((CUdeviceptr)(g_mATs + ur->start), cinfo->mATs_host + ur->start, ur->len * sizeof(unsigned short), strm);
+		cuMemcpyHtoDAsync((CUdeviceptr)(g_mAOTs + ur->start), cinfo->mAOTs_host + ur->start, ur->len * sizeof(mAO_t), strm);
 		sync_required = TRUE;
 		list_del(&ur->list);
 		free(ur);
@@ -483,10 +493,10 @@ init_skrun_host(void)
 
 	pthread_create(&checker, NULL, skruns_checkfunc, NULL);
 
-	g_mATs = (unsigned short *)mtbs_cudaMalloc(EPOCH_MAX * n_max_mtbs * sizeof(unsigned short));
+	g_mAOTs = (mAO_t *)mtbs_cudaMalloc(EPOCH_MAX * n_max_mtbs * sizeof(mAO_t));
 	g_mtb_epochs = (unsigned char *)mtbs_cudaMalloc(n_max_mtbs);
 
-	params[0] = &g_mATs;
+	params[0] = &g_mAOTs;
 	params[1] = &g_mtb_epochs;
 	params[2] = &g_skruns;
 	params[3] = &g_mtbs_done;
@@ -504,10 +514,10 @@ init_skrun_host(void)
 	for (i = 0; i < 2; i++) {
 		copyinfos[i].n_skruns = 0;
 		copyinfos[i].skruns = (skrun_t *)malloc(sizeof(skrun_t) * n_queued_kernels);
-		copyinfos[i].mATs_host = (unsigned short *)malloc(EPOCH_MAX * n_max_mtbs * sizeof(unsigned short));
+		copyinfos[i].mAOTs_host = (mAO_t *)malloc(EPOCH_MAX * n_max_mtbs * sizeof(mAO_t));
 		INIT_LIST_HEAD(&copyinfos[i].upranges);
 
-		memset(copyinfos[i].mATs_host, 0, sizeof(unsigned short) * n_max_mtbs * EPOCH_MAX);
+		memset(copyinfos[i].mAOTs_host, 0, sizeof(mAO_t) * n_max_mtbs * EPOCH_MAX);
 	}
 	pthread_spin_init(&lock, 0);
 	sched_sms = (sched_sm_t *)calloc(n_sm_count * n_MTBs_per_sm, sizeof(sched_sm_t));
@@ -527,7 +537,7 @@ fini_skrun_host(void)
 	pthread_join(checker, &retval);
 	mtbs_cudaFree(g_skruns);
 
-	mtbs_cudaFree(g_mATs);
+	mtbs_cudaFree(g_mAOTs);
 	mtbs_cudaFree(g_mtb_epochs);
 }
 
