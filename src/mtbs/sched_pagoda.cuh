@@ -2,6 +2,7 @@ typedef struct {
 	unsigned	exec;
 	int	taskid;
 	unsigned short	offset;
+	unsigned char	barid;
 } wentry_t;
 
 static __shared__ wentry_t	warptable[31];
@@ -18,17 +19,25 @@ get_skr_pagoda(void)
 	return &tentry->skrun;
 }
 
-__device__ unsigned short
+static __device__ unsigned short
 get_offset_TB_pagoda(void)
 {
 	wentry_t	*wentry = &warptable[threadIdx.x / 32 - 1];
 	return wentry->offset;
 }
 
+static __device__ unsigned
+get_barid_pagoda(skrun_t *skr)
+{
+	wentry_t	*wentry = &warptable[threadIdx.x / 32 - 1];
+	return (unsigned)wentry->barid;
+}
+
 static __device__ void
-assign_task(int taskid, unsigned count)
+assign_task(int taskid, unsigned n_tbs, unsigned n_mtbs_per_tb, unsigned char barid)
 {
 	unsigned	i;
+	unsigned	count = n_mtbs_per_tb;
 	unsigned	offset = 0;
 
 again:
@@ -36,9 +45,16 @@ again:
 		if (!atomicCAS(&warptable[i].exec, 0, 1)) {
 			warptable[i].taskid = taskid;
 			warptable[i].offset = offset++;
+			warptable[i].barid = barid;
 			count--;
-			if (count == 0)
-				return;
+			if (count == 0) {
+				n_tbs--;
+				if (n_tbs == 0) {
+					return;
+				}
+				count = n_mtbs_per_tb;
+				barid = (barid + 1) % 16;
+			}
 		}
 	}
 	goto again;
@@ -49,6 +65,7 @@ do_scheduler(unsigned tableid)
 {
 	while (!*(volatile BOOL *)&d_fkinfo->sched_done) {
 		unsigned	eNum = threadIdx.x;
+		unsigned char	barid = 0;
 
 		while (eNum < d_numEntriesPerPool) {
 			int	taskid = tableid * d_numEntriesPerPool + eNum + 2;
@@ -71,7 +88,9 @@ do_scheduler(unsigned tableid)
 			if (tentry->sched) {
 				tentry->sched = 0;
 				doneCtr[eNum] = tentry->skrun.n_tbs * tentry->skrun.n_mtbs_per_tb;
-				assign_task(taskid, doneCtr[eNum]);
+				assign_task(taskid, tentry->skrun.n_tbs, tentry->skrun.n_mtbs_per_tb, barid);
+				if (tentry->skrun.n_mtbs_per_tb > 1)
+					barid = (barid + tentry->skrun.n_tbs) % 16;
 			}
 			eNum += 32;
 		}
@@ -97,8 +116,8 @@ do_executer(unsigned tableid)
 			int	*ready_host = d_readytable + wentry->taskid - 2;
 			int	eNum = (wentry->taskid - 2) % d_numEntriesPerPool;
 			wentry->taskid = 0;
-			wentry->exec = 0;
-			if (atomicDec(doneCtr + eNum, MAX_ENTRIES_PER_POOL) == 1) {
+			atomicExch(&wentry->exec, 0);
+			if (atomicDec(doneCtr + eNum, (unsigned)-1) == 1) {
 				*ready_host = 0;
 				tentry->ready = 0;
 			}
@@ -137,4 +156,5 @@ func_init_pagoda(tentry_t *taskentries, int *ready_table, unsigned numEntriesPer
 
 	benchapi_funcs.get_skr = get_skr_pagoda;
 	benchapi_funcs.get_offset_TB = get_offset_TB_pagoda;
+	benchapi_funcs.get_barid = get_barid_pagoda;
 }
