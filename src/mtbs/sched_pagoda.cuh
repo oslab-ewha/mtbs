@@ -6,6 +6,7 @@ typedef struct {
 } wentry_t;
 
 static __shared__ wentry_t	warptable[31];
+static __shared__ unsigned	n_mtbs_sched;
 static __shared__ unsigned	doneCtr[MAX_ENTRIES_PER_POOL];
 
 static __device__ BOOL	*psched_done;
@@ -34,48 +35,50 @@ get_barid_pagoda(skrun_t *skr)
 }
 
 static __device__ void
-assign_task(int taskid, unsigned n_tbs, unsigned n_mtbs_per_tb, unsigned char barid)
+pSched(int base, int taskid, unsigned n_mtbs, unsigned char barid)
 {
-	unsigned	i;
-	unsigned	count = n_mtbs_per_tb;
-	unsigned	offset = 0;
+	BOOL		threadDone = TRUE;
+	unsigned	i = threadIdx.x;
 
-again:
-	for (i = 0; i < 31; i++) {
-		if (!atomicCAS(&warptable[i].exec, 0, 1)) {
-			warptable[i].taskid = taskid;
-			warptable[i].offset = offset++;
-			warptable[i].barid = barid;
-			count--;
-			if (count == 0) {
-				n_tbs--;
-				if (n_tbs == 0) {
-					return;
+	while (TRUE) {
+		if (i < 31) {
+			threadDone = FALSE;
+			if (!*(volatile int *)&warptable[i].exec) {
+				unsigned	id = atomicDec(&n_mtbs_sched, n_mtbs + 31);
+				if (id <= n_mtbs) {
+					warptable[i].taskid = taskid;
+					warptable[i].offset = id + base;
+					warptable[i].barid = barid;
+					__threadfence_block();
+					warptable[i].exec = 1;
 				}
-				count = n_mtbs_per_tb;
-				barid = (barid + 1) % 16;
 			}
 		}
+		if (n_mtbs_sched == 0 || n_mtbs_sched > n_mtbs) {
+			threadDone = TRUE;
+		}
+		if (__all_sync(0xffffffff, threadDone == 1))
+			break;
 	}
-	goto again;
 }
 
 static __device__ void
 do_scheduler(unsigned tableid)
 {
-	while (!*(volatile BOOL *)&d_fkinfo->sched_done) {
-		unsigned	eNum = threadIdx.x;
-		unsigned char	barid = 0;
+	unsigned char	barid = 0;
 
-		while (eNum < d_numEntriesPerPool) {
-			int	taskid = tableid * d_numEntriesPerPool + eNum + 2;
+	while (!*(volatile BOOL *)&d_fkinfo->sched_done) {
+		unsigned	i;
+
+		for (i = 0; i < d_numEntriesPerPool; i++) {
+			int	taskid = tableid * d_numEntriesPerPool + i + 2;
 			tentry_t	*tentry = d_taskentries + taskid - 2;
 			int	ready = *(volatile int *)&tentry->ready;
 
 			if (ready > 1) {
-				tentry_t	*tentry_prev = d_taskentries + tentry->ready - 2;
+				tentry_t	*tentry_prev = d_taskentries + ready - 2;
 
-				if (tentry->ready != taskid && tentry_prev->ready != -1) {
+				if (ready != taskid && *(volatile int *)&tentry_prev->ready != -1) {
 					__threadfence();
 					continue;
 				}
@@ -87,12 +90,14 @@ do_scheduler(unsigned tableid)
 			}
 			if (tentry->sched) {
 				tentry->sched = 0;
-				doneCtr[eNum] = tentry->skrun.n_tbs * tentry->skrun.n_mtbs_per_tb;
-				assign_task(taskid, tentry->skrun.n_tbs, tentry->skrun.n_mtbs_per_tb, barid);
-				if (tentry->skrun.n_mtbs_per_tb > 1)
-					barid = (barid + tentry->skrun.n_tbs) % 16;
+				doneCtr[i] = tentry->skrun.n_tbs * tentry->skrun.n_mtbs_per_tb;
+				for (unsigned j = 0; j < tentry->skrun.n_tbs; j++) {
+					n_mtbs_sched = tentry->skrun.n_mtbs_per_tb;
+					pSched(tentry->skrun.n_mtbs_per_tb * j, taskid, tentry->skrun.n_mtbs_per_tb, barid);
+					if (tentry->skrun.n_mtbs_per_tb > 1)
+						barid = (barid + 1) % 16;
+				}
 			}
-			eNum += 32;
 		}
 	}
 }
@@ -116,13 +121,12 @@ do_executer(unsigned tableid)
 			int	*ready_host = d_readytable + wentry->taskid - 2;
 			int	eNum = (wentry->taskid - 2) % d_numEntriesPerPool;
 			wentry->taskid = 0;
-			atomicExch(&wentry->exec, 0);
+			wentry->exec = 0;
 			if (atomicDec(doneCtr + eNum, (unsigned)-1) == 1) {
 				*ready_host = 0;
 				tentry->ready = 0;
 			}
 		}
-		SYNCWARP();
 	}
 }
 

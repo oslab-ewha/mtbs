@@ -22,6 +22,8 @@ static __device__ tentry_t	*d_taskentries;
 static __device__ int		*d_readytable;
 static __device__ unsigned	d_numEntriesPerPool;
 static int	*ready_table;
+static int	*prev_table;
+static int	*next_table;
 
 static CUstream	strm_submit;
 
@@ -56,7 +58,7 @@ push_prev_taskid(int taskid_prev)
 }
 
 static int
-pop_prev_taskid(void)
+pop_prev_taskid(int taskid_next)
 {
 	int	taskid_prev;
 
@@ -66,7 +68,19 @@ pop_prev_taskid(void)
 		return -1;
 	}
 	taskid_prev = queued_taskid_prevs[qtp_end];
+	if (taskid_next < 0) {
+		if (prev_table[taskid_prev - 2] > 0) {
+			pthread_spin_unlock(&lock);
+			return 0;
+		}
+	}
 	qtp_end = NEXT_QTP(qtp_end);
+
+	if (taskid_next > 0) {
+		prev_table[taskid_next - 2] = taskid_prev;
+		next_table[taskid_prev - 2] = taskid_next;
+	}
+
 	pthread_spin_unlock(&lock);
 
 	return taskid_prev;
@@ -105,15 +119,20 @@ unlock_table(unsigned col)
 	pthread_spin_unlock(&lock);
 }
 
+static void start_dummy_submitter(void);
+
 static void
 mark_prev_task_ready(void)
 {
 	while (TRUE) {
 		tentry_t	*d_tentry;
-		int	taskid_prev = pop_prev_taskid();
+		int	taskid_prev = pop_prev_taskid(-1);
 
-		if (taskid_prev < 0)
+		if (taskid_prev <= 0) {
+			if (taskid_prev == 0)
+				start_dummy_submitter();
 			return;
+		}
 
 		d_tentry = g_taskentries + taskid_prev - 2;
 		cuMemcpyHtoDAsync((CUdeviceptr)&d_tentry->ready, &taskid_prev, sizeof(int), strm_submit);
@@ -130,7 +149,7 @@ dummy_submitter_func(void *ctx)
 		ticks = get_ticks();
 
 		pthread_spin_lock(&lock);
-		ticks_end = last_tick_submitted + 10000;
+		ticks_end = last_tick_submitted + 30000;
 		if (ticks_end > ticks) {
 			pthread_spin_unlock(&lock);
 			usleep(ticks_end - ticks);
@@ -200,12 +219,12 @@ again:
 		goto again;
 	}
 
-	tentry->ready = pop_prev_taskid();
+	offset = tentry - taskentries;
+	tentry->ready = pop_prev_taskid(offset + 2);
 
 	unlock_table(col);
 
 	memcpy(&tentry->skrun, skr, sizeof(skrun_t));
-	offset = tentry - taskentries;
 	cuMemcpyHtoDAsync((CUdeviceptr)(g_taskentries + offset), tentry, sizeof(tentry_t), strm_submit);
 	cuStreamSynchronize(strm_submit);
 	ready_table[offset] = -1;
@@ -235,6 +254,12 @@ wait_skrun_pagoda(sk_t sk, vstream_t vstream, int *pres)
 
 	cuMemcpyDtoHAsync(pres, (CUdeviceptr)&d_tentry->skrun.res, sizeof(int), strm_submit);
 	cuStreamSynchronize(strm_submit);
+	pthread_spin_lock(&lock);
+	if (next_table[offset] > 0) {
+		prev_table[next_table[offset] - 2] = 0;
+	}
+	prev_table[offset] = 0;
+	pthread_spin_unlock(&lock);
 	tentry->ready = 0;
 }
 
@@ -258,11 +283,15 @@ init_skrun_pagoda(void)
 
 	g_taskentries = (tentry_t *)mtbs_cudaMalloc(sizeof(tentry_t) * n_tentries);
 	cuMemAllocHost((void **)&ready_table, sizeof(int) * n_tentries);
+	prev_table = (int *)malloc(sizeof(int) * n_tentries);
+	next_table = (int *)malloc(sizeof(int) * n_tentries);
 
 	for (i = 0; i < n_tentries; i++) {
 		taskentries[i].ready = 0;
 		taskentries[i].sched = 0;
 		ready_table[i] = 0;
+		prev_table[i] = 0;
+		next_table[i] = 0;
 	}
 
 	params[0] = &g_taskentries;
