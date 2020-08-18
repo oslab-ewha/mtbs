@@ -1,13 +1,13 @@
 #include "tbs_sd.h"
 
-#define mTB_INDEX_MY(id_sm)	((id_sm - 1) * dn_mtbs_per_sm + d_fkinfo->n_mtbs_per_MTB * blockIdx.y + (threadIdx.x / N_THREADS_PER_mTB) + 1)
+#define mTB_INDEX_MY()		(blockIdx.x * dn_mtbs_per_sm + d_fkinfo->n_mtbs_per_MTB * blockIdx.y + (threadIdx.x / N_THREADS_PER_mTB) + 1)
 
-#define EPOCH_MY(id_sm)		mtb_epochs[mTB_INDEX_MY(id_sm) - 1]
+#define EPOCH_MY()		mtb_epochs[mTB_INDEX_MY() - 1]
 
-#define mTB_ALLOCOFF_TABLE_MY(id_sm)	(mAOTs + dn_mtbs * EPOCH_MY(id_sm))
+#define mTB_ALLOCOFF_TABLE_MY()	(mAOTs + dn_mtbs * EPOCH_MY())
 
-#define SKRID_MY(id_sm)		mTB_ALLOCOFF_TABLE_MY(id_sm)[mTB_INDEX_MY(id_sm) - 1].skrid
-#define mTB_OFFSET_TB_MY(id_sm)		mTB_ALLOCOFF_TABLE_MY(id_sm)[mTB_INDEX_MY(id_sm) - 1].offset
+#define SKRID_MY()		mTB_ALLOCOFF_TABLE_MY()[mTB_INDEX_MY() - 1].skrid
+#define mTB_OFFSET_TB_MY()	mTB_ALLOCOFF_TABLE_MY()[mTB_INDEX_MY() - 1].offset
 
 /* epoch directory for mTB allocation table */
 static __device__ volatile mAO_t	*mAOTs;
@@ -25,14 +25,10 @@ static __device__ unsigned	dn_mtbs_per_sm;
 static __device__ skrid_t
 get_skrid_static(void)
 {
-	unsigned	id_sm;
-
-	id_sm = get_smid() + 1;
-
 	for (;;) {
 		skrid_t	skrid;
 
-		skrid = *(volatile unsigned short *)&SKRID_MY(id_sm);
+		skrid = *(volatile unsigned short *)&SKRID_MY();
 		if (skrid != 0 && *(volatile unsigned *)&d_skruns[skrid - 1].n_mtbs_per_tb > 0) {
 			return skrid;
 		}
@@ -48,15 +44,13 @@ get_skrid_static(void)
 static __device__ void
 advance_epoch_static(skrid_t skrid)
 {
-	unsigned	id_sm = get_smid() + 1;
-
 	SYNCWARP();
 
 	if (IS_LEADER_THREAD()) {
 		skrun_t	*skr = &d_skruns[skrid - 1];
 
-		SKRID_MY(id_sm) = 0;
-		EPOCH_MY(id_sm) = (EPOCH_MY(id_sm) + 1) % EPOCH_MAX;
+		SKRID_MY() = 0;
+		EPOCH_MY() = (EPOCH_MY() + 1) % EPOCH_MAX;
 		if (atomicAdd(d_mtbs_done_cnts + skrid - 1, 1) == skr->n_mtbs_per_tb * skr->n_tbs - 1) {
 			d_mtbs_done[skrid - 1] = TRUE;
 			d_mtbs_done_cnts[skrid - 1] = 0;
@@ -68,8 +62,7 @@ advance_epoch_static(skrid_t skrid)
 static __device__ skrun_t *
 get_skr_static(void)
 {
-	unsigned	id_sm = get_smid() + 1;
-	skrid_t		skrid = SKRID_MY(id_sm);
+	skrid_t		skrid = SKRID_MY();
 
 	return &d_skruns[skrid - 1];
 }
@@ -77,17 +70,13 @@ get_skr_static(void)
 static __device__ unsigned short
 get_offset_TB_static(void)
 {
-	unsigned	id_sm = get_smid() + 1;
-
-	return mTB_OFFSET_TB_MY(id_sm);
+	return mTB_OFFSET_TB_MY();
 }
 
 static __device__ unsigned
 get_barid_static(skrun_t *skr)
 {
-	unsigned	id_sm = get_smid() + 1;
-
-	return (threadIdx.x / N_THREADS_PER_mTB - mTB_OFFSET_TB_MY(id_sm) % skr->n_mtbs_per_tb) / skr->n_mtbs_per_tb;
+	return (threadIdx.x / N_THREADS_PER_mTB - mTB_OFFSET_TB_MY() % skr->n_mtbs_per_tb) / skr->n_mtbs_per_tb;
 }
 
 extern "C" __global__ void

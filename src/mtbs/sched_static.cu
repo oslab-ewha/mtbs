@@ -70,7 +70,7 @@ extern unsigned char	*g_mtb_epochs;
 
 typedef struct {
 	BOOL	locked;
-	unsigned	idx_last;
+	unsigned	idxs_last[8];	/* 8 should be larger than n_MTBs_per_sm */
 } sched_sm_t;
 
 static sched_sm_t	*sched_sms;
@@ -121,7 +121,7 @@ find_mtbs_on_sm(unsigned idx_sm, unsigned idx_MTB, unsigned n_mtbs, unsigned cha
 	unsigned	n_mtbs_cur = 0;
 	unsigned	idx, idx_start;
 
-	idx = idx_start = ssm->idx_last;
+	idx = idx_start = ssm->idxs_last[idx_MTB];
 
 	do {
 		int	epoch = EPOCH_HOST(idx_sm, idx_MTB, idx + 1);
@@ -138,7 +138,7 @@ find_mtbs_on_sm(unsigned idx_sm, unsigned idx_MTB, unsigned n_mtbs, unsigned cha
 		idx = (idx + 1) % n_mtbs_per_MTB;
 
 		if (n_mtbs_cur == n_mtbs) {
-			ssm->idx_last = idx;
+			ssm->idxs_last[idx_MTB] = idx;
 			return TRUE;
 		}
 	}
