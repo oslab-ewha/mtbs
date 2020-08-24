@@ -8,6 +8,7 @@
 
 #define SKRID_MY()		mTB_ALLOCOFF_TABLE_MY()[mTB_INDEX_MY() - 1].skrid
 #define mTB_OFFSET_TB_MY()	mTB_ALLOCOFF_TABLE_MY()[mTB_INDEX_MY() - 1].offset
+#define BARID_MY()		mTB_ALLOCOFF_TABLE_MY()[mTB_INDEX_MY() - 1].barid
 
 /* epoch directory for mTB allocation table */
 static __device__ volatile mAO_t	*mAOTs;
@@ -76,7 +77,7 @@ get_offset_TB_static(void)
 static __device__ unsigned
 get_barid_static(skrun_t *skr)
 {
-	return (threadIdx.x / N_THREADS_PER_mTB - mTB_OFFSET_TB_MY() % skr->n_mtbs_per_tb) / skr->n_mtbs_per_tb;
+	return BARID_MY();
 }
 
 extern "C" __global__ void

@@ -7,7 +7,8 @@
 
 typedef struct {
 	unsigned short	skrid;
-	unsigned short	offset;
+	unsigned short	offset:12;
+	unsigned short	barid:4;
 } mAO_t;
 
 static pthread_t	host_scheduler;
@@ -71,6 +72,7 @@ extern unsigned char	*g_mtb_epochs;
 typedef struct {
 	BOOL	locked;
 	unsigned	idxs_last[8];	/* 8 should be larger than n_MTBs_per_sm */
+	unsigned char	barid;
 } sched_sm_t;
 
 static sched_sm_t	*sched_sms;
@@ -188,7 +190,7 @@ get_sibling_upranges(htod_copyinfo_t *cinfo, unsigned up_idx, uprange_t **pprev,
 }
 
 static void
-apply_mAOT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsigned idx, skrid_t skrid, unsigned short offset)
+apply_mAOT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsigned idx, skrid_t skrid, unsigned short offset, unsigned char barid)
 {
 	htod_copyinfo_t	*cinfo;
 	unsigned	up_idx;
@@ -204,6 +206,7 @@ apply_mAOT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsig
 	mAO = mAO_EPOCH_HOST(cinfo, epoch, idx_sm, idx_MTB, idx);
 	mAO->skrid = skrid;
 	mAO->offset = offset;
+	mAO->barid = barid;
 
 	if (!get_sibling_upranges(cinfo, up_idx, &prev, &next)) {
 		pthread_spin_unlock(&lock);
@@ -246,7 +249,7 @@ apply_mAOT_uprange(unsigned char epoch, unsigned idx_sm, unsigned idx_MTB, unsig
 }
 
 static void
-set_mtbs_skrid(sched_ctx_t *pctx, unsigned idx_sm, unsigned idx_MTB, unsigned short offbase, unsigned n_mtbs, unsigned char *epochs)
+set_mtbs_skrid(sched_ctx_t *pctx, unsigned idx_sm, unsigned idx_MTB, unsigned short offbase, unsigned n_mtbs, unsigned char barid, unsigned char *epochs)
 {
 	unsigned	n_mtbs_cur = 0;
 	unsigned short	off = 0;
@@ -258,8 +261,8 @@ set_mtbs_skrid(sched_ctx_t *pctx, unsigned idx_sm, unsigned idx_MTB, unsigned sh
 		if (epoch == EPOCH_MAX)
 			continue;
 
-		apply_mAOT_uprange(epoch, idx_sm, idx_MTB, i, pctx->skrid, offbase + off);
-		apply_mAOT_uprange(NEXT_EPOCH(epoch), idx_sm, idx_MTB, i, 0, (unsigned short)-1);
+		apply_mAOT_uprange(epoch, idx_sm, idx_MTB, i, pctx->skrid, offbase + off, barid);
+		apply_mAOT_uprange(NEXT_EPOCH(epoch), idx_sm, idx_MTB, i, 0, (unsigned short)-1, barid);
 		EPOCH_HOST_ALLOC(idx_sm, idx_MTB, i) = NEXT_EPOCH(epoch);
 		n_mtbs_cur++;
 		if (n_mtbs_cur == n_mtbs)
@@ -280,7 +283,12 @@ assign_tb_by_rr(sched_ctx_t *pctx, unsigned short offbase, unsigned n_mtbs)
 
 		memset(pctx->epochs, EPOCH_MAX, n_mtbs_per_MTB);
 		if (find_mtbs_on_sm(idx_sm, idx_MTB, n_mtbs, pctx->epochs)) {
-			set_mtbs_skrid(pctx, idx_sm, idx_MTB, offbase, n_mtbs, pctx->epochs);
+			unsigned char	barid = 16;
+			if (n_mtbs > 1) {
+				barid = sched_sms[idx_sm].barid;
+				sched_sms[idx_sm].barid = (barid + 1) % 16;
+			}
+			set_mtbs_skrid(pctx, idx_sm, idx_MTB, offbase, n_mtbs, barid, pctx->epochs);
 			unlock_sm(idx_sm, idx_MTB);
 
 			return TRUE;
